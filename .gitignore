@@ -1,1 +1,15 @@
+<<<<<<< HEAD
 
+=======
+# .gitignore
+__pycache__/
+*.pyc
+.env
+node_modules/
+build/
+dist/
+*.sqlite3
+frontend/node_modules
+frontend/build
+*.log
+>>>>>>> c50d0bce66b3b017b0343934f025039ef0383c27

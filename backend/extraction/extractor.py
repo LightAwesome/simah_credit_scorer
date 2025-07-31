@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from PIL import Image
 import pytesseract
+
 import camelot
 from collections import defaultdict
 import io
@@ -526,6 +527,152 @@ def convert_to_pdf_coordinates(bbox, img_height, dpi=300):
 
     return (pdf_x1, pdf_y1, pdf_x2, pdf_y2)
 
+# def extract_credit_score_from_page1(pdf_path):
+#     """Extract credit score from page 1 of PDF"""
+
+#     try:
+#         pages = pdf2image.convert_from_path(
+#             pdf_path,
+#             dpi=300,
+#             first_page=1,
+#             last_page=1
+#         )
+
+#         if not pages:
+#             print("Failed to convert PDF page to image")
+#             return None
+
+#         page_image = pages[0]
+#         print(f"Converted page 1 to image (size: {page_image.size})")
+
+#         cv_image = cv2.cvtColor(np.array(page_image), cv2.COLOR_RGB2BGR)
+#         gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+
+#         contrast = cv2.convertScaleAbs(gray, alpha=1.5, beta=0)
+
+#         ocr_configs = [
+#             '--psm 6 -c tessedit_char_whitelist=0123456789',
+#         ]
+
+#         potential_scores = []
+
+#         for img_data in [gray, contrast]:
+#             pil_img = Image.fromarray(img_data)
+
+#             for config in ocr_configs:
+#                 try:
+#                     data = pytesseract.image_to_data(
+#                         pil_img,
+#                         config=config,
+#                         output_type=pytesseract.Output.DICT
+#                     )
+
+#                     for i in range(len(data['text'])):
+#                         text = data['text'][i].strip()
+#                         confidence = int(data['conf'][i])
+
+#                         if (text.isdigit() and
+#                             len(text) == 3 and
+#                             300 <= int(text) <= 850 and
+#                             confidence > 30):
+
+#                             potential_scores.append({
+#                                 'score': int(text),
+#                                 'confidence': confidence
+#                             })
+
+#                 except Exception:
+#                     continue
+
+#         if potential_scores:
+#             best_score = max(potential_scores, key=lambda x: x['confidence'])
+#             print(f"Credit score detected: {best_score['score']} (confidence: {best_score['confidence']}%)")
+#             return best_score['score']
+#         else:
+#             print("No credit score detected in range 300-850")
+#             return None
+
+#     except Exception as e:
+#         print(f"Error extracting credit score: {e}")
+#         return None
+def extract_credit_score_from_page1(pdf_path):
+    """Extract credit score from page 1 of PDF"""
+    try:
+        # Convert first page to image using fitz instead of pdf2image
+        doc = fitz.open(pdf_path)
+        page = doc[0]  # First page (0-indexed)
+        mat = fitz.Matrix(300/72, 300/72)  # 300 DPI
+        pix = page.get_pixmap(matrix=mat)
+        img_data = pix.tobytes("png")
+        page_image = Image.open(io.BytesIO(img_data))
+        doc.close()
+
+        cv_image = cv2.cvtColor(np.array(page_image), cv2.COLOR_RGB2BGR)
+        gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+
+        # Enhanced preprocessing
+        processed = cv2.GaussianBlur(gray, (3, 3), 0)
+        processed = cv2.adaptiveThreshold(
+            processed, 255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY_INV, 11, 2
+        )
+
+        # Try multiple OCR configurations
+        ocr_configs = [
+            '--psm 11 digits',
+            '--psm 6 -c tessedit_char_whitelist=0123456789',
+            '--psm 4'
+        ]
+
+        potential_scores = []
+
+        for config in ocr_configs:
+            try:
+                data = pytesseract.image_to_data(
+                    processed,
+                    config=config,
+                    output_type=pytesseract.Output.DICT
+                )
+
+                for i in range(len(data['text'])):
+                    text = data['text'][i].strip()
+                    conf = int(data['conf'][i])
+
+                    if (text.isdigit() and
+                        3 <= len(text) <= 4 and  # Handle 3-4 digit scores
+                        300 <= int(text) <= 850 and
+                        conf >= 30):
+
+                        potential_scores.append({
+                            'score': int(text),
+                            'confidence': conf,
+                            'bbox': (
+                                data['left'][i],
+                                data['top'][i],
+                                data['width'][i],
+                                data['height'][i]
+                            )
+                        })
+            except Exception:
+                continue
+
+        if potential_scores:
+            # Find the score with highest confidence and reasonable position
+            valid_scores = [s for s in potential_scores if s['bbox'][1] < page_image.height * 0.7]
+            if not valid_scores:
+                valid_scores = potential_scores
+
+            best_score = max(valid_scores, key=lambda x: x['confidence'])
+            print(f"Credit score detected: {best_score['score']} (confidence: {best_score['confidence']}%)")
+            return best_score['score']
+        else:
+            print("No credit score detected in range 300-850")
+            return None
+
+    except Exception as e:
+        print(f"Error extracting credit score: {e}")
+        return None
 def detect_tables_with_boundaries_and_ocr(pdf_path, page_num, dpi=300):
     """Enhanced main function with high contrast boundary detection"""
     print(f"Processing page {page_num} with enhanced boundary + OCR detection...")
@@ -839,9 +986,8 @@ def save_tables_to_csv(all_extracted_tables, output_dir="extracted_tables_enhanc
                 print(f"Saved: {filepath}")
 
     return saved_files
-def save_tables_to_text(all_extracted_tables, output_file="extracted_tables_enhanced/all_tables.txt"):
-    """Save all successfully extracted tables into a single text file with structured metadata"""
-
+def save_tables_to_text(all_extracted_tables, credit_score=None, output_file="extracted_tables_enhanced/all_tables.txt"):
+    """Save all tables to text with credit score header and enhanced metadata"""
     import os
 
     output_dir = os.path.dirname(output_file)
@@ -850,6 +996,13 @@ def save_tables_to_text(all_extracted_tables, output_file="extracted_tables_enha
 
     lines = []
 
+    # Add credit score header if available
+    if credit_score is not None:
+        lines.append("=" * 80)
+        lines.append(f"CREDIT SCORE: {credit_score}")
+        lines.append("=" * 80)
+        lines.append("\n")
+
     for page_num, page_tables in all_extracted_tables.items():
         for table in page_tables:
             df = table.get("dataframe")
@@ -857,10 +1010,12 @@ def save_tables_to_text(all_extracted_tables, output_file="extracted_tables_enha
                 boundary_score = table.get("boundary_score", 0)
                 contrast_score = table.get("contrast_score", 0)
                 table_num = table.get("table_num", 0)
+                confidence = table.get("confidence", 0)
 
                 # Metadata block
                 lines.append("=" * 80)
                 lines.append(f"Page {page_num} - Table {table_num}")
+                lines.append(f"Detection Confidence: {confidence:.2f}")
                 lines.append(f"Boundary Score: {boundary_score:.2f}")
                 lines.append(f"Contrast Score: {contrast_score:.2f}")
                 lines.append("-" * 80)
@@ -920,6 +1075,13 @@ def generate_camelot_code_from_boundaries(pdf_path, all_table_areas, table_names
 
 # Main execution
 def extract(pdf_path):
+    credit_score = extract_credit_score_from_page1(pdf_path)
+
+    print("\n" + "="*60)
+    print(f"CREDIT SCORE EXTRACTION RESULT: {credit_score if credit_score else 'Not found'}")
+    print("="*60 + "\n")
+
+
 
     print("ENHANCED HIGH CONTRAST BOUNDARY + OCR TABLE DETECTION")
     print("=" * 60)
@@ -959,7 +1121,7 @@ def extract(pdf_path):
     print(f"\n{'='*60}")
     print("SAVING TABLES TO CSV WITH QUALITY METRICS")
     print(f"{'='*60}")
-    saved_files = save_tables_to_text(extracted_tables)
+    saved_files = save_tables_to_text(extracted_tables, credit_score=credit_score)
 
     # Print final coordinates for easy copy-paste
     print(f"\n{'='*60}")

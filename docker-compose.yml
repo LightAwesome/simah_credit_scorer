@@ -1,0 +1,26 @@
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: my-fastapi
+    container_name: fastapi
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - UVICORN_WORKERS=1
+    command: uvicorn api.routes:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: my-react
+    container_name: react
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend

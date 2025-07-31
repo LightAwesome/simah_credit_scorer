@@ -1,2 +1,9 @@
 fastapi
 uvicorn
+pymupdf
+camelot-py[cv]
+python-multipart
+opencv-python
+pillow
+pytesseract
+

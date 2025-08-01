@@ -1,0 +1,327 @@
+================================================================================
+CREDIT SCORE: 688
+================================================================================
+
+
+================================================================================
+Page 1 - Table 1
+Detection Confidence: 0.76
+Boundary Score: 0.89
+Contrast Score: 1.00
+--------------------------------------------------------------------------------
+           0                       1              2           3            4           5          6              7
+             Active Products Summary                                                                              
+                                                    Installment              Outstanding                          
+Product Type                Creditor Account Number             Credit Limit             As Of Date Payment Status
+                                                         Amount                  Balance                          
+      ******                  ******         ******      ******       ******      ******     ******         ******
+      ******                  ******         ******      ******       ******      ******     ******         ******
+      ******                  ******         ******      ******       ******      ******     ******         ******
+      ******                  ******         ******      ******       ******      ******     ******         ******
+      ******                  ******         ******      ******       ******      ******     ******         ******
+      ******                  ******         ******      ******       ******      ******     ******         ******
+      ******                  ******         ******      ******       ******      ******     ******         ******
+
+
+================================================================================
+Page 1 - Table 2
+Detection Confidence: 0.74
+Boundary Score: 0.87
+Contrast Score: 0.95
+--------------------------------------------------------------------------------
+                0                    1       2
+                  Personal Information        
+    Customer Name                    : *******
+           Gender                    : *******
+   Marital Status                    : *******
+        ID Number                    : *******
+          ID Type                    : *******
+  ID Expiry  Date                    : *******
+Issuing Authority                    : *******
+      Nationality                    : *******
+    Date Of Birth                    : *******
+    Mobile Number                    : *******
+Employment Sector                    : *******
+    Employer Name                    : *******
+       Occupation                    : *******
+           Salary                    : *******
+             City                    : *******
+      Update Date                    : *******
+
+
+================================================================================
+Page 1 - Table 3
+Detection Confidence: 0.76
+Boundary Score: 0.86
+Contrast Score: 0.94
+--------------------------------------------------------------------------------
+                                   0       1       2
+               Credit Report Summary                
+            First Account Issue Date         *******
+    Number of Active Credit Products : : : : *******
+                        Total Limits         *******
+          Total Outstanding Balances         *******
+             Total Guaranteed Limits     : : *******
+           Total Guaranteed Balances         *******
+        Number of Defaulted Products     : : *******
+Total Outstanding Defaulted Balances         *******
+
+
+================================================================================
+Page 1 - Table 4
+Detection Confidence: 0.67
+Boundary Score: 0.81
+Contrast Score: 1.00
+--------------------------------------------------------------------------------
+                         0   1                               2                             3
+              Credit Score                                                                  
+                 Scorecard : :         ******* ******* *******                              
+Score Contributing Factors             ******* ******* *******                              
+                                       ******* ******* *******                              
+                               ******* ******* ******* *******                              
+                                                               Simah Score - Powered By Fico
+
+
+================================================================================
+Page 2 - Table 1
+Detection Confidence: 0.76
+Boundary Score: 0.90
+Contrast Score: 1.00
+--------------------------------------------------------------------------------
+                                    0                                     1              2             3              4                  5              6               7
+                                      Guaranteed Defaulted Products Summary                                                                                              
+ Active Guaranteed Defaulted Products                                                                                                                                    
+                         Product Type                              Creditor Account Number Reported Date Default amount Default Oustanding Default Status                
+                               ******                                ******         ******        ******         ******             ******         ******                
+                               ******                                ******         ******        ******         ******             ******         ******                
+                               ******                                ******         ******        ******         ******             ******         ******                
+                               ******                                ******         ******        ******         ******             ******         ******                
+Settled Guaranteed Defaulted Products                                                                                                                                    
+                         Product Type                              Creditor Account Number Reported Date Default amount Default Oustanding Default Status Settlement Date
+                               ******                                ******         ******        ******         ******             ******         ******          ******
+                               ******                                ******         ******        ******         ******             ******         ******          ******
+                               ******                                ******         ******        ******         ******             ******         ******          ******
+                               ******                                ******         ******        ******         ******             ******         ******          ******
+
+
+================================================================================
+Page 2 - Table 2
+Detection Confidence: 0.67
+Boundary Score: 0.90
+Contrast Score: 1.00
+--------------------------------------------------------------------------------
+                            0             1             2             3                   4             5               6
+              Bounced Cheques                                                                                            
+                Reported Bank Cheque Number Reported Date Cheque Amount Outstanding Balance Cheque Status Settlement Date
+                       ******        ******        ******        ******              ******        ******          ******
+Reason:  ****** ****** ******                                                                                            
+
+
+================================================================================
+Page 2 - Table 3
+Detection Confidence: 0.75
+Boundary Score: 0.89
+Contrast Score: 1.00
+--------------------------------------------------------------------------------
+                         0                          1              2             3              4                  5              6               7
+                           Defaulted Products Summary                                                                                              
+ Active Defaulted Products                                                                                                                         
+              Product Type                   Creditor Account Number Reported Date Default amount Default Oustanding Default Status                
+                    ******                     ******         ******        ******         ******             ******         ******                
+                    ******                     ******         ******        ******         ******             ******         ******                
+                    ******                     ******         ******        ******         ******             ******         ******                
+                    ******                     ******         ******        ******         ******             ******         ******                
+Settled Defaulted Products                                                                                                                         
+              Product Type                   Creditor Account Number Reported Date Default amount Default Oustanding Default Status Settlement Date
+                    ******                     ******         ******        ******         ******             ******         ******          ******
+                    ******                     ******         ******        ******         ******             ******         ******          ******
+                    ******                     ******         ******        ******         ******             ******         ******          ******
+                    ******                     ******         ******        ******         ******             ******         ******          ******
+
+
+================================================================================
+Page 3 - Table 1
+Detection Confidence: 0.75
+Boundary Score: 0.91
+Contrast Score: 0.96
+--------------------------------------------------------------------------------
+                                0                                                     1                 2                          3                  4                                 5                  6                   7
+                  Product Details                                                                                                                                                                                               
+                                                                                                                                                                                                                 Cloesed Product
+                                                  Arab National Bank        Credit Card                   Product:  ****************                    Product Status:  ****************                                       
+                   Account Number                                            Issue Date      Credit Limit     Number Of Installments Installment Amount                 Payment Frequency        Expiry Date   Type Of Guarantee
+                           ******                                                ******            ******                     ******             ******                            ******             ******              ******
+              Outstanding Balance                                      Past Due Balance        As Of Date           Last Amount Paid  Last Payment Date                 Next Payment Date         Close Date   Salary Assignment
+                           ******                                                ******            ******                     ******             ******                            ******             ******              ******
+                                                                                                Dispensed             Max Instalment                                                      Average Instalment                    
+                  Balloon Payment                                          Down Payment                                                    Finance Mode                    Product Status                                       
+                                                                                                   Amount                     Amount                                                                  Amount                    
+                           ******                                                ******            ******                     ******             ******                            ******             ******                    
+Payment Status For Last 24 Months                                                                                                                                                                                               
+       Sabb         Personal Loan                                                                                                                                                                                 Active Product
+                                                                                                          Product:  ****************                    Product Status:  ****************                                       
+                   Account Number                                            Issue Date      Credit Limit     Number Of Installments Installment Amount                 Payment Frequency        Expiry Date   Type Of Guarantee
+                           ******                                                ******            ******                     ******             ******                            ******             ******              ******
+              Outstanding Balance                                      Past Due Balance        As Of Date           Last Amount Paid  Last Payment Date                 Next Payment Date         Close Date   Salary Assignment
+                           ******                                                ******            ******                     ******             ******                            ******             ******              ******
+                                                                                                Dispensed             Max Instalment                                                      Average Instalment                    
+                  Balloon Payment                                          Down Payment                                                    Finance Mode                    Product Status                                       
+                                                                                                   Amount                     Amount                                                                  Amount                    
+                           ******                                                ******            ******                     ******             ******                            ******             ******                    
+Payment Status For Last 24 Months                                                                                                                                                                                               
+                                  Instalments Details ( In Case Of Installment Change )                                                                                                                                         
+         Installment Start Date 1                                                               :\n******                                                              Installment Amount          :\n******                    
+         Installment Start Date 2                                                               :\n******                                                              Installment Amount          ******\n:                    
+         Installment Start Date 3                                                               :\n******                                                              Installment Amount          :\n******                    
+                                                                                                        :                                                                                          :\n******                    
+         Installment Start Date 4                                                                  ******                                                              Installment Amount                                       
+         Installment Start Date 5                                                               :\n******                                                              Installment Amount          :\n******                    
+                  Joint Applicant                                                                                                                                                                                               
+             Number Of Applicants                                                       Instalment Amount           Last Amount Paid                                    Last Payment Date                    Outstanding Balance
+                           ******                                                ******                                       ******                                               ******             ******                    
+            Percentage Allocation                                                         Applicant Limit             Payment Status                                      Past Due Amount                      Next Payment Date
+                           ******                                                ******                                       ******                                               ******             ******                    
+
+
+================================================================================
+Page 3 - Table 2
+Detection Confidence: 0.64
+Boundary Score: 0.90
+Contrast Score: 1.00
+--------------------------------------------------------------------------------
+              0                            1      2             3              4                   5      6               7
+                Enforcement Courts Decisions                                                                               
+Resolution Date            Resolution Number   City Reported Date Claimed Amount Outstanding Balance Status Settlement Date
+         ******                       ****** ******        ******         ******              ****** ******          ******
+
+
+================================================================================
+Page 3 - Table 3
+Detection Confidence: 0.66
+Boundary Score: 0.85
+Contrast Score: 1.00
+--------------------------------------------------------------------------------
+                 0         1              2            3                  4
+Previous Enquiries                                                         
+      Enquiry Date Enquirier Enquiry Number Product Type Amount Applied For
+            ******    ******         ******       ******             ******
+            ******    ******         ******       ******             ******
+
+
+================================================================================
+Page 4 - Table 1
+Detection Confidence: 0.74
+Boundary Score: 0.86
+Contrast Score: 1.00
+--------------------------------------------------------------------------------
+                  0              1              2              3
+      Narratives\n!                                             
+  Member Narratives                                             
+      Reported Date Narrative Type    Reported By Narrative Text
+             ******         ******         ******         ******
+             ******         ******         ******         ******
+             ******         ******         ******         ******
+Personal Narratives                                             
+      Reported Date Narrative Type Narrative Text               
+             ******         ******         ******               
+             ******         ******         ******               
+             ******         ******         ******               
+
+
+================================================================================
+Page 4 - Table 2
+Detection Confidence: 0.74
+Boundary Score: 0.84
+Contrast Score: 0.95
+--------------------------------------------------------------------------------
+             0                1         2         3         4
+     Addresses                                               
+                                Address 1 Address 2 Address 3
+  Address Type                     ******    ******    ******
+Address Line 1                     ******    ******    ******
+Address Line 2                     ******    ******    ******
+       P.O.Box  : : : : : : : :    ******    ******    ******
+          City                     ******    ******    ******
+   Postal Code                     ******    ******    ******
+       Country                     ******    ******    ******
+   Date Loaded                     ******    ******    ******
+               National Address                              
+   Building No                     ******    ******    ******
+   Street Name                     ******    ******    ******
+ District Name                     ******    ******    ******
+     City Name    : : : : : : :    ******    ******    ******
+   Postal Code                     ******    ******    ******
+ Additional No                     ******    ******    ******
+       Unit No                     ******    ******    ******
+
+
+================================================================================
+Page 4 - Table 3
+Detection Confidence: 0.71
+Boundary Score: 0.82
+Contrast Score: 0.98
+--------------------------------------------------------------------------------
+                  0            1         2            3         4
+Contact Information                                              
+        Number Type Country Code Area Code Phone Number Extension
+             ******       ******    ******       ******    ******
+             ******       ******    ******       ******    ******
+             ******       ******    ******       ******    ******
+             ******       ******    ******       ******    ******
+             ******       ******    ******       ******    ******
+             ******       ******    ******       ******    ******
+             ******       ******    ******       ******    ******
+             ******       ******    ******       ******    ******
+             ******       ******    ******       ******    ******
+             ******       ******    ******       ******    ******
+             ******       ******    ******       ******    ******
+
+
+================================================================================
+Page 5 - Table 1
+Detection Confidence: 0.73
+Boundary Score: 0.89
+Contrast Score: 1.00
+--------------------------------------------------------------------------------
+                                                                                                                                                                   0 1                                                                        2
+                                                                                                                                             Disclaimer & Disclosure                                                                           
+                                                                                                                                                                     ,                                                                         
+                                                               Disclaimer: This information has been collated from various sources on a confidential basis and doesn   t represent the opinion of Saudi Credit Bureau (SIMAH). No Liability (in
+                   contract or otherwise whatsoever) attaches to SIMAH as a result of taking any investment and/or any other decision based on information provided.                                                                           
+  Disclosure: SIMAH, a Closed Joint Stock Company, Capital SR 200,000,000 Paid in Full,C.R1010171047 Membership No 115731,Tel: 8003010046, P.O Box 8859 Riyadh,11492                                                                           
+National Address: Riyadh, Alshuhada, BLDG No. 2596,Unit No 1, Additional No.7347, Zip 13241. Under the Supervision and Regulation of SAMA with a License No. 37 / 2.                                                                           
+                                                                                                                                                       www.simah.com                                                                           
+
+
+================================================================================
+Page 5 - Table 2
+Detection Confidence: 0.73
+Boundary Score: 0.85
+Contrast Score: 0.94
+--------------------------------------------------------------------------------
+                   0                      1      2      3      4
+                     Employment Information                     
+                                              Type   Type   Type
+            Employer                        ****** ****** ******
+           occuption                        ****** ****** ******
+  Date Of Employment            : : : : : : ****** ****** ******
+        Basic Salary                        ****** ****** ******
+        Total Salary                        ****** ****** ******
+       Last Reported                        ****** ****** ******
+Employment Addresses                                            
+        Address Type                        ****** ****** ******
+      Address Line 1                        ****** ****** ******
+      Address Line 2                        ****** ****** ******
+             P.O.Box          : : : : : : : ****** ****** ******
+                City                        ****** ****** ******
+         Postal Code                        ****** ****** ******
+             Country                        ****** ****** ******
+    National Address                                            
+         Building No                        ****** ****** ******
+         Street Name                        ****** ****** ******
+       District Name                        ****** ****** ******
+           City Name          : : : : : : : ****** ****** ******
+         Postal Code                        ****** ****** ******
+       Additional No                        ****** ****** ******
+             Unit No                        ****** ****** ******
+

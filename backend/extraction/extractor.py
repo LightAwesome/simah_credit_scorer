@@ -3,11 +3,388 @@ import cv2
 import numpy as np
 from PIL import Image
 import pytesseract
-
+import pandas as pd
 import camelot
 from collections import defaultdict
 import io
+import re
+from typing import List, Set, Any, Dict
+import pandas as pd
+def extract_credit_scoring_variables(extracted_tables):
+    """
+    Extract variables relevant to credit scoring from verified tables.
 
+    Args:
+        extracted_tables: Dict from verify_detected_tables() with structure:
+                         {page_num: [{'dataframe': df, ...}, ...]}
+
+    Returns:
+        Dict with categorized credit scoring variables
+    """
+    # Credit scoring keywords by category
+    CREDIT_KEYWORDS = {
+    'payment': {
+        'keywords': [
+            'payment', 'paid', 'due', 'overdue', 'delinquent', 'default',
+            'missed', 'late', 'dpd', 'days past', 'arrears', 'outstanding',
+            'emi', 'installment', 'repayment', 'bounce', 'dishonor',
+            'past due', 'last payment date', 'next due date', 'last amount paid',
+            'installment amount', 'payment frequency', 'last 24 cycles',
+            'payment history', 'payment pattern', 'settlement date',
+            'defaults', 'last amout paid', 'outstanding balance'
+        ],
+        'patterns': [
+            r'pay(?:ment)?s?', r'paid', r'paying', r'due', r'over\s*due', r'delinqu?ent', r'defaults?',
+            r'miss(?:ed|ing)|missed payment', r'late(?:ly| payment)?',
+            r'dpd\s*\d*', r'day[s]?\s*past', r'arrear[s]?', r'outstanding', r'emi?s?',
+            r'instal?l(?:ment|ments)?', r'repay(?:ment|ments)?', r'bounce[ds]?',
+            r'dishono[u]?r', r'past\s*due', r'last\s*payment\s*date', r'next\s*due\s*date',
+            r'last\s*amount\s*paid', r'installment\s*amount', r'unpaid', r'over\s*payment',
+            r'delay(?:ed|s)?', r'fail(?:ed)?\s*payment', r'skipped\s*payment', r'not\s*paid',
+            r'late\s*fee', r'surcharge', r'payment\s*arrears', r'pay\s*schedule', r'cycling\s*arrears',
+            r'payment\s*frequency', r'last\s*24\s*cycles', r'payment\s*history',
+            r'payment\s*pattern', r'settlement\s*date', r'payment\s*behavior',
+            r'payment\s*performance', r'payment\s*regularity', r'last\s*amout\s*paid',
+            r'outstanding\s*balance', r'defaults\b', r'payment\s*frequency',
+        r'last\s*24\s*cycles',
+        r'total\s*defaults?\s*amount',
+        r'settlement\s*date',
+        r'default\s*amount',
+        r'cumulative\s*defaults'
+        ]
+    },
+    'balance': {
+        'keywords': [
+            'balance', 'amount', 'outstanding', 'principal', 'limit',
+            'credit limit', 'available', 'utilization', 'utilized',
+            'exposure', 'sanctioned', 'disbursed', 'pos',
+            'total limits', 'total liabilities', 'total guaranteed limits',
+            'total guaranteed liabilities', 'current delinquent balance',
+            'outstanding balance', 'original amount', 'total defaults',
+            'available credit', 'utilization ratio', 'credit utilization'
+        ],
+        'patterns': [
+            r'bal(?:ance)?s?', r'amount[s]?', r'outstanding', r'principal', r'limit[s]?', r'credit\s*limit[s]?',
+            r'avail(?:able|ability)', r'utilis(?:ation|ed)', r'utiliz(?:ation|ed)', r'expos(?:ure|ed)?',
+            r'sanction(?:ed|s)?', r'disburs(?:ed|ement)?',
+            r'pos\b', r'total\s*limits?', r'total\s*liabilit(?:y|ies)',
+            r'total\s*guaranteed\s*limits?', r'total\s*guaranteed\s*liabilit(?:y|ies)?',
+            r'current\s*delinquent\s*balance', r'outstanding\s*balance', r'original\s*amount',
+            r'balance\s*available', r'aggregate\s*limit[s]?', r'remaining\s*balance',
+            r'cashline', r'used\s*limit', r'amount\s*due', r'remain(?:ing)?',
+            r'total\s*defaults?', r'available\s*credit', r'utilization\s*ratio',
+            r'credit\s*utilization', r'exposure\s*limit',  r'total\s*limits?',
+        r'total\s*liabilit(?:y|ies)',
+        r'current\s*delinquent\s*balance',
+        r'credit\s*utilization\s*ratio',
+        r'total\s*exposure',
+        r'aggregate\s*credit\s*limit'
+        ]
+    },
+    'account': {
+        'keywords': [
+            'account', 'loan', 'card', 'credit', 'facility', 'product',
+            'mortgage', 'auto', 'personal', 'business', 'number', 'no.',
+            'account number', 'account type', 'product type', 'member type',
+            'member account status', 'credit instruments', 'guaranteed credit instruments',
+            'tenure', 'closed date', 'issue date', 'expiry date', 'status',
+            'earliest issue date', 'creditor', 'consumer credit report'
+        ],
+        'patterns': [
+            r'account(?: number)?s?', r'(?:a/c|A/C)', r'loan[s]?', r'card[s]?', r'creditor[s]?',
+            r'facilit(?:y|ies)', r'product\s*(?:type|name|desc)', r'product', r'mortgage',
+            r'auto', r'personal', r'business', r'number[s]?', r'no\.', r'(?:acct|account)\s*type',
+            r'member\s*type', r'member\s*account\s*status',
+            r'credit\s*instrument[s]?', r'guaranteed\s*credit\s*instrument[s]?', r'portfolio',
+            r'borrower', r'customer', r'client', r'reference\s*number', r'tenure',
+            r'closed\s*date', r'issue\s*date', r'expiry\s*date', r'account\s*age',
+            r'status\b', r'earliest\s*issue\s*date', r'consumer\s*credit\s*report'
+        ]
+    },
+    'date': {
+        'keywords': [
+            'date', 'opened', 'closed', 'issue', 'expiry', 'since',
+            'disbursed', 'sanctioned', 'reported', 'month', 'year',
+            'issue date', 'expiry date', 'closed date', 'date of birth',
+            'id expiry date', 'earliest issue date', 'as of date',
+            'date loaded', 'date of employment', 'contract expiry date',
+            'settlement date', 'last payment date', 'next due date',
+            'date of enquiry', 'report date'
+        ],
+        'patterns': [
+            r'date[s]?', r'open(?:ed|ing)?', r'clos(?:ed|ing)?', r'issue\s*date',
+            r'expiry\s*date', r'expir(?:ed|y)?', r'since', r'disburs(?:ed|ement)?',
+            r'sanction(?:ed| date)?', r'report(?:ed|ing| date)?', r'month(?:ly)?', r'year[s]?',
+            r'date\s*of\s*birth', r'id\s*expiry\s*date', r'earliest\s*issue\s*date',
+            r'as\s*of\s*date', r'date\s*loaded', r'employment\s*date', r'contract\s*expiry\s*date',
+            r'first\s*disbursal', r'last\s*payment\s*date', r'next\s*due\s*date',
+            r'transaction\s*date', r'review\s*date', r'settlement\s*date',
+            r'account\s*opening\s*date', r'recent\s*account\s*opening', r'date\s*of\s*enquiry',
+            r'report\s*date'
+        ]
+    },
+    'status': {
+        'keywords': [
+            'status', 'active', 'closed', 'written off', 'settled',
+            'current', 'irregular', 'substandard', 'doubtful',
+            'member account status', 'settlement date', 'derogatory',
+            'adverse', 'collection', 'account status'
+        ],
+        'patterns': [
+            r'status\b', r'active', r'closed', r'written\s*off', r'settled?',
+            r'settle(?:ment)?(\s*date)?', r'current\b', r'irregular', r'substandard',
+            r'doubtful', r'default', r'watch\s*list', r'pending', r'disput(?:ed|e)?',
+            r'on\s*hold', r'waived', r'restructure(?:d|ing)?', r'lien',
+            r'derogatory', r'adverse', r'collection', r'account\s*status',
+            r'standing', r'classification'
+        ]
+    },
+    'inquiry': {
+        'keywords': [
+            'inquiry', 'enquiry', 'queries', 'searches', 'applications',
+            'previous enquiries', 'enquiries for previous 30 days',
+            'enquiry number', 'enquiry type', 'date of enquiry',
+            'recent enquiries', 'inquiry velocity', 'inquiry pattern',
+            'enquirer', 'member reference', 'amount'
+        ],
+        'patterns': [
+            r'inquir(?:y|ies)?', r'enquir(?:y|ies)?', r'quer(?:y|ies)', r'search(?:es)?',
+            r'applic(?:ation|ations)?', r'previous\s*enquir(?:y|ies)?',
+            r'enquir(?:y|ies)?\s*for\s*previous\s*\d+\s*days', r'enquiry\s*number',
+            r'enquiry\s*type', r'date\s*of\s*enquiry', r'review', r'request',
+            r'recent\s*enquir(?:y|ies)?', r'inquiry\s*velocity', r'inquiry\s*pattern',
+            r'too\s*many\s*recent\s*enquiries', r'enquiry\s*count', r'enquirer',
+            r'member\s*reference', r'enquiries\s*in\s*last\s*30\s*days',
+        r'total\s*enquiries',
+        r'enquiry\s*velocity',
+        r'amount\s*of\s*enquiries',
+        r'recent\s*application\s*count'
+        ]
+    },
+    'score': {
+        'keywords': [
+            'score', 'simah score', 'scorecard', 'score contributing factors',
+            'risk', 'very high risk', 'high risk', 'medium risk', 'low risk',
+            'very low risk', 'risk level', 'risk category', 'derogatory'
+        ],
+        'patterns': [
+            r'score\b', r'simah\s*score', r'score\s*card', r'risk', r'contributing\s*factors?',
+            r'contribution', r'(very\s+)?(high|low|medium)\s*risk', r'profile',
+            r'risk\s*level', r'scoring', r'risk\s*category', r'credit\s*score',
+            r'derogatory', r'risk\s*band', r'risk\s*grade', r'score\s*range',
+            r'scorecard'
+        ]
+    },
+    'personal': {
+        'keywords': [
+            'name', 'first name', 'second name', 'third name', 'family name',
+            'unformatted name', 'gender', 'marital status', 'nationality',
+            'id type', 'iqama', 'applicant type', 'number of applicants'
+        ],
+        'patterns': [
+            r'name\b', r'first\s*name', r'second\s*name', r'third\s*name', r'family\s*name',
+            r'unformatted\s*name', r'gender', r'marital\s*status', r'nationality',
+            r'id\s*type', r'iqama', r'applicant\s*type', r'number\s*of\s*applicants',
+            r'date\s*of\s*birth', r'dob', r'birth\s*date', r'individual'
+        ]
+    },
+    'employment': {
+        'keywords': [
+            'employer', 'occupation', 'basic salary', 'total salary',
+            'salary flag', 'length of service', 'occupations and employers',
+            'employment duration', 'income level', 'debt to income',
+            'contract expiry date', 'date of employment', 'type employer',
+            'occupations and employers'
+        ],
+        'patterns': [
+            r'employ(?:er|ment)?', r'occupation[s]?', r'basic\s*salary', r'total\s*salary',
+            r'salary\s*flag', r'length\s*of\s*service', r'contract\s*expiry',
+            r'date\s*loaded', r'profession', r'job', r'work', r'company',
+            r'employment\s*duration', r'income\s*level', r'debt\s*to\s*income',
+            r'date\s*of\s*employment', r'type\s*employer', r'income', r'earnings',
+            r'occupations\s*and\s*employers',  r'basic\s*salary', r'length'
+        r'total\s*salary',
+        r'occupation',
+        r'employment\s*duration',
+        r'contract\s*expiry\s*date',
+        r'length\s*of\s*service'
+        ]
+    },
+    'contact': {
+        'keywords': [
+            'address', 'phone', 'mobile', 'contact numbers', 'address type',
+            'po box', 'city', 'postal code', 'country', 'area code',
+            'address line 1', 'address line 2', 'correspondence',
+            'addresses', 'phone number country'
+        ],
+        'patterns': [
+            r'address(?:es)?', r'phone', r'mobile', r'contact(?: numbers?)?',
+            r'address\s*type', r'p\.?\s*o\.?\s*box', r'po\s*box', r'city',
+            r'postal\s*code', r'country', r'area\s*code', r'email', r'location',
+            r'landline', r'residence', r'address\s*line\s*[12]', r'correspondence',
+            r'phone\s*number\s*country'
+        ]
+    },
+    'credit_history': {
+        'keywords': [
+            'last 24 cycles', 'payment history', 'credit age', 'account age',
+            'oldest account', 'newest account', 'average account age',
+            'time since recent account', 'lack of recent account information',
+            'payment pattern', 'cycle pattern', 'earliest issue date',
+            'credit instruments', 'guaranteed credit instruments'
+        ],
+        'patterns': [
+            r'last\s*24\s*cycles?', r'payment\s*history', r'credit\s*age',
+            r'account\s*age', r'oldest\s*account', r'newest\s*account',
+            r'average\s*account\s*age', r'time\s*since\s*recent\s*account',
+            r'lack\s*of\s*recent\s*account\s*information', r'payment\s*pattern',
+            r'cycle\s*pattern', r'historical\s*payment', r'payment\s*behavior\s*pattern',
+            r'earliest\s*issue\s*date', r'credit\s*instruments?',
+            r'guaranteed\s*credit\s*instruments?'
+        ]
+    },
+    'summary': {
+        'keywords': [
+            'summary', 'data provided vs available', 'total', 'aggregate',
+            'overall', 'combined', 'consolidated', 'report summary',
+            'total limits', 'total liabilities', 'total defaults',
+            'total guaranteed limits', 'total guaranteed liabilities',
+            'current delinquent balance', 'enquiries for previous 30 days'
+        ],
+        'patterns': [
+            r'summary', r'data\s*provided\s*vs\s*available', r'total[s]?',
+            r'aggregate[ds]?', r'overall', r'combined', r'consolidated',
+            r'report\s*summary', r'executive\s*summary', r'overview',
+            r'total\s*limits?', r'total\s*liabilit(?:y|ies)', r'total\s*defaults?',
+            r'total\s*guaranteed\s*limits?', r'total\s*guaranteed\s*liabilit(?:y|ies)',
+            r'current\s*delinquent\s*balance', r'enquir(?:y|ies)?\s*for\s*previous\s*\d+\s*days'
+        ]
+    },
+    'other': {
+        'keywords': [
+            'reference number', 'member reference', 'tenure', 'payment frequency',
+            'security type', 'creditor', 'enquirer', 'reason',
+            'defaults', 'report date', 'consumer credit report',
+            'simah', 'member', 'product type creditor', 'member type',
+            'enquiry number', 'scorecard'
+        ],
+        'patterns': [
+            r'reference(\s*number)?', r'member\s*reference', r'tenure',
+            r'payment\s*frequency', r'security\s*type', r'creditor', r'enquirer',
+            r'reason', r'default', r'cycle', r'category', r'guarantor',
+            r'original', r'settlement', r'review', r'purpose', r'report\s*date',
+            r'consumer\s*credit\s*report', r'simah', r'member\s*type',
+            r'product\s*type\s*creditor', r'enquiry\s*number', r'scorecard'
+        ]
+    }
+}
+    # Initialize results
+    found_variables = {category: set() for category in CREDIT_KEYWORDS}
+    found_variables['other'] = set()
+
+    def is_credit_variable(text):
+        """Check if text is a credit-related variable and return category"""
+        text_lower = text.lower()
+        text_norm = re.sub(r'[^\w\s]', '', text_lower)
+
+        # Check each category
+        for category, config in CREDIT_KEYWORDS.items():
+            # Check exact keywords
+            for keyword in config['keywords']:
+                if keyword in text_lower:
+                    return True, category
+
+            # Check patterns
+            for pattern in config['patterns']:
+                if re.search(pattern, text_norm):
+                    return True, category
+
+        # Additional credit-specific checks
+        if any(term in text_lower for term in ['score', 'cibil', 'bureau', 'rating']):
+            return True, 'other'
+
+        return False, ''
+
+    def clean_variable_name(text):
+        """Clean and normalize variable name"""
+        # Remove common suffixes/prefixes
+        text = re.sub(r'[:,\-_]+$', '', text)
+        text = re.sub(r'^[:,\-_]+', '', text)
+
+        # Normalize whitespace
+        text = ' '.join(text.split())
+
+        # Capitalize appropriately
+        words = text.split()
+        if len(words) <= 3:
+            text = ' '.join(word.capitalize() for word in words)
+        else:
+            text = text.title()
+
+        return text.strip()
+
+    # Process each page's tables
+    for page_num, page_tables in extracted_tables.items():
+        print(f"Processing page {page_num} with {len(page_tables)} tables")
+
+        for table_info in page_tables:
+            # Get the dataframe from the table info
+            df = table_info.get('dataframe')
+
+            # Skip if no dataframe or empty
+            if df is None or df.empty:
+                print(f"  Skipping table - no dataframe or empty")
+                continue
+
+            print(f"  Processing table with shape {df.shape}")
+
+            # Strategy 1: Headers (first 2 rows)
+            for row_idx in range(min(2, len(df))):
+                for val in df.iloc[row_idx]:
+                    if pd.notna(val):
+                        text = str(val).strip()
+                        if 2 < len(text) < 50:
+                            is_var, category = is_credit_variable(text)
+                            if is_var:
+                                cleaned = clean_variable_name(text)
+                                if cleaned:
+                                    found_variables[category].add(cleaned)
+                                    print(f"    Found {category} variable: {cleaned}")
+
+            # Strategy 2: First column (often contains field names)
+            if df.shape[1] > 0:
+                for val in df.iloc[:, 0]:
+                    if pd.notna(val):
+                        text = str(val).strip()
+                        if 2 < len(text) < 50:
+                            is_var, category = is_credit_variable(text)
+                            if is_var:
+                                cleaned = clean_variable_name(text)
+                                if cleaned:
+                                    found_variables[category].add(cleaned)
+                                    print(f"    Found {category} variable: {cleaned}")
+
+            # Strategy 3: Look for key-value patterns
+            if len(df.columns) >= 2:
+                for _, row in df.iterrows():
+                    # Check if first column looks like a label
+                    if pd.notna(row.iloc[0]):
+                        text = str(row.iloc[0]).strip()
+                        if text.endswith(':') or len(text.split()) <= 4:
+                            is_var, category = is_credit_variable(text)
+                            if is_var:
+                                cleaned = clean_variable_name(text)
+                                if cleaned:
+                                    found_variables[category].add(cleaned)
+
+    # Convert sets to sorted lists
+    result = {
+        category: sorted(list(variables))
+        for category, variables in found_variables.items()
+        if variables
+    }
+
+    return result
 def convert_pdf_to_image(pdf_path, page_num, dpi=300):
     """Convert PDF page to high-quality image for OCR and contour detection"""
     doc = fitz.open(pdf_path)
@@ -138,7 +515,6 @@ def detect_table_boundaries_with_contours(img, dpi=300):
                 # Enhanced rectangular check
                 epsilon = 0.015 * cv2.arcLength(contour, True)  # More lenient approximation
                 approx = cv2.approxPolyDP(contour, epsilon, True)
-
                 # Calculate how "rectangular" the contour is
                 rect_area = w * h
                 fill_ratio = area / rect_area if rect_area > 0 else 0
@@ -527,74 +903,6 @@ def convert_to_pdf_coordinates(bbox, img_height, dpi=300):
 
     return (pdf_x1, pdf_y1, pdf_x2, pdf_y2)
 
-# def extract_credit_score_from_page1(pdf_path):
-#     """Extract credit score from page 1 of PDF"""
-
-#     try:
-#         pages = pdf2image.convert_from_path(
-#             pdf_path,
-#             dpi=300,
-#             first_page=1,
-#             last_page=1
-#         )
-
-#         if not pages:
-#             print("Failed to convert PDF page to image")
-#             return None
-
-#         page_image = pages[0]
-#         print(f"Converted page 1 to image (size: {page_image.size})")
-
-#         cv_image = cv2.cvtColor(np.array(page_image), cv2.COLOR_RGB2BGR)
-#         gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
-
-#         contrast = cv2.convertScaleAbs(gray, alpha=1.5, beta=0)
-
-#         ocr_configs = [
-#             '--psm 6 -c tessedit_char_whitelist=0123456789',
-#         ]
-
-#         potential_scores = []
-
-#         for img_data in [gray, contrast]:
-#             pil_img = Image.fromarray(img_data)
-
-#             for config in ocr_configs:
-#                 try:
-#                     data = pytesseract.image_to_data(
-#                         pil_img,
-#                         config=config,
-#                         output_type=pytesseract.Output.DICT
-#                     )
-
-#                     for i in range(len(data['text'])):
-#                         text = data['text'][i].strip()
-#                         confidence = int(data['conf'][i])
-
-#                         if (text.isdigit() and
-#                             len(text) == 3 and
-#                             300 <= int(text) <= 850 and
-#                             confidence > 30):
-
-#                             potential_scores.append({
-#                                 'score': int(text),
-#                                 'confidence': confidence
-#                             })
-
-#                 except Exception:
-#                     continue
-
-#         if potential_scores:
-#             best_score = max(potential_scores, key=lambda x: x['confidence'])
-#             print(f"Credit score detected: {best_score['score']} (confidence: {best_score['confidence']}%)")
-#             return best_score['score']
-#         else:
-#             print("No credit score detected in range 300-850")
-#             return None
-
-#     except Exception as e:
-#         print(f"Error extracting credit score: {e}")
-#         return None
 def extract_credit_score_from_page1(pdf_path):
     """Extract credit score from page 1 of PDF"""
     try:
@@ -673,6 +981,9 @@ def extract_credit_score_from_page1(pdf_path):
     except Exception as e:
         print(f"Error extracting credit score: {e}")
         return None
+
+
+
 def detect_tables_with_boundaries_and_ocr(pdf_path, page_num, dpi=300):
     """Enhanced main function with high contrast boundary detection"""
     print(f"Processing page {page_num} with enhanced boundary + OCR detection...")
@@ -727,7 +1038,7 @@ def detect_tables_with_boundaries_and_ocr(pdf_path, page_num, dpi=300):
         print(f"  - Rows: {table['rows']}, Columns: {table['columns']}")
 
     # Save enhanced debug images
-    #save_debug_image(img, table_contours, validated_tables, page_num, debug_images)
+    # save_debug_image(img, table_contours, validated_tables, page_num, debug_images)
 
     return table_areas
 
@@ -986,6 +1297,8 @@ def save_tables_to_csv(all_extracted_tables, output_dir="extracted_tables_enhanc
                 print(f"Saved: {filepath}")
 
     return saved_files
+
+
 def save_tables_to_text(all_extracted_tables, credit_score=None, output_file="extracted_tables_enhanced/all_tables.txt"):
     """Save all tables to text with credit score header and enhanced metadata"""
     import os
@@ -1163,6 +1476,8 @@ def extract(pdf_path):
             for table in areas
         ) / total_detections
         print(f"Average detection confidence: {avg_confidence:.3f}")
+    fields = extract_credit_scoring_variables(extracted_tables)
+    print(f"Field names = {fields}")
 
     print("\nEnhanced detection complete! Check the debug images to see the detection process.")
     return {

@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Combine RUN commands for better layer caching and smaller image
 RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     libglib2.0-0 \
@@ -14,18 +14,14 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code
+# Copy the backend directory (this is the key fix!)
 COPY . /app/
 
-# Set Python path
+# Set PYTHONPATH so Python can find the api module
 ENV PYTHONPATH=/app
 
-# Create non-root user for security
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
-
-# Expose port
+# Expose port for documentation
 EXPOSE 8000
 
-# Production command (no --reload)
-CMD ["uvicorn", "api.routes:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start command - now Python can find the api module
+CMD ["uvicorn", "api.routes:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import './Upload.css';
 
 const Upload = () => {
@@ -76,7 +76,12 @@ const Upload = () => {
   return (
     <div className="upload-container">
       <div className="upload-header">
-        <img src="/markaba-logo.png" alt="Markaba" className="logo" />
+        <div className="header-top">
+          <img src="/markaba-logo.png" alt="Markaba" className="logo" />
+          <Link to="/configure" className="configure-link">
+            ⚙️ Configure Calculations
+          </Link>
+        </div>
         <h1>Simah Credit Scorer</h1>
         <p>Upload your credit report PDF to get instant analysis</p>
       </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Upload from './pages/Upload';
-import Results from './pages/Results';
+// import Results from './pages/Results'; // Temporarily disabled
 import Configure from './pages/Configure';
 import './App.css';
 
@@ -11,7 +11,7 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/" element={<Upload />} />
-          <Route path="/results" element={<Results />} />
+          {/* <Route path="/results" element={<Results />} /> */} {/* Temporarily disabled */}
           <Route path="/configure" element={<Configure />} />
         </Routes>
       </div>

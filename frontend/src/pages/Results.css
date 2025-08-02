@@ -320,3 +320,211 @@
     font-size: 2.5rem;
   }
 }
+
+/* Add styles for new components */
+
+.score-percentage {
+  font-size: 0.9rem;
+  color: #aaa;
+  display: block;
+}
+
+.score-breakdown {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.score-breakdown p {
+  color: #ccc;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.section-results {
+  margin-bottom: 2rem;
+}
+
+.section-calculations {
+  margin-top: 1rem;
+}
+
+.calculation-result {
+  margin-bottom: 1rem;
+}
+
+.formula-details {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  border-left: 4px solid #77ff99;
+}
+
+.formula-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.formula-name {
+  font-weight: 600;
+  color: #77ff99;
+}
+
+.formula-score {
+  font-weight: bold;
+  color: #fff;
+  background: rgba(119, 255, 153, 0.2);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.formula-info {
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.formula-info p {
+  margin: 0.3rem 0;
+}
+
+.variables-used {
+  margin-top: 0.5rem;
+}
+
+.variables-used ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0 0;
+}
+
+.variables-used li {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.2rem 0.5rem;
+  margin: 0.2rem 0;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+.missing-variables {
+  margin-top: 0.5rem;
+  color: #ff6b6b;
+  font-size: 0.8rem;
+}
+
+.data-analysis {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 2rem;
+  margin: 2rem 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.data-analysis h3 {
+  color: #77ff99;
+  margin: 0 0 1rem 0;
+}
+
+.analysis-stats p {
+  color: #ccc;
+  margin: 0.5rem 0;
+}
+
+.variables-details {
+  margin-top: 1rem;
+}
+
+.variables-details summary {
+  color: #77ff99;
+  cursor: pointer;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+  margin-bottom: 0.5rem;
+}
+
+.variables-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.variable-tag {
+  background: rgba(119, 255, 153, 0.2);
+  color: #77ff99;
+  padding: 0.3rem 0.6rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  border: 1px solid rgba(119, 255, 153, 0.3);
+}
+
+.error-section {
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 15px;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.error-section h3 {
+  color: #ff6b6b;
+  margin: 0 0 1rem 0;
+}
+
+.error-content {
+  color: #ffcccb;
+}
+
+.raw-data-section {
+  margin-top: 2rem;
+}
+
+.raw-data-section h3 {
+  color: #77ff99;
+  margin-bottom: 1rem;
+}
+
+.raw-data-content {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.raw-data-content summary {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #77ff99;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.raw-data-content pre {
+  color: #ccc;
+  padding: 1rem;
+  margin: 0;
+  overflow-x: auto;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+/* Responsive design for new components */
+@media (max-width: 768px) {
+  .formula-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .variables-list {
+    justify-content: center;
+  }
+  
+  .variable-tag {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+}

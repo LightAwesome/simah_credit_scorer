@@ -53,15 +53,17 @@ const Upload = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('/upload', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
 
       if (response.ok) {
         const result = await response.json();
-        // Navigate to results page with the analysis data
-        navigate('/results', { state: { analysisResult: result } });
+        // Show success message instead of navigating to results
+        alert(`File uploaded successfully! Data extracted: ${JSON.stringify(result.extracted_data, null, 2)}`);
+        // Reset file selection
+        setFile(null);
       } else {
         alert('Error analyzing file. Please try again.');
       }

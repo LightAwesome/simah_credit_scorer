@@ -58,22 +58,27 @@ const Configure = () => {
 
   const saveCalculations = async () => {
     try {
-      const response = await fetch('/api/calculations', {
+      const response = await fetch('/api/calculations/formula', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(calculations),
+        body: JSON.stringify({
+          sections: calculations.sections,
+          variables: calculations.variables
+        }),
       });
       
       if (response.ok) {
-        alert('Calculations saved successfully!');
+        const result = await response.json();
+        alert(`Calculations saved successfully! Updated ${result.sections_count} sections with ${result.total_formulas} formulas.`);
       } else {
-        alert('Error saving calculations');
+        const error = await response.json();
+        alert(`Error saving calculations: ${error.detail || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error saving calculations:', error);
-      alert('Error saving calculations');
+      alert('Error saving calculations. Please check your connection.');
     }
   };
 

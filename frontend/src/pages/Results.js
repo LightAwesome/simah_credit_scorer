@@ -16,12 +16,26 @@ const Results = () => {
     navigate('/');
   };
 
-  const renderScoreCard = (title, score, maxScore, description) => (
+  // Handle both old and new result formats
+  const getCalculationData = () => {
+    // New format from the calculation endpoint
+    if (analysisResult.calculation_result && analysisResult.calculation_result.success) {
+      return analysisResult.calculation_result;
+    }
+    // Legacy format
+    return analysisResult;
+  };
+
+  const calculationData = getCalculationData();
+  const finalResult = calculationData.final_result || {};
+  const sections = calculationData.sections || [];
+
+  const renderScoreCard = (title, score, maxScore, description, details = null) => (
     <div className="score-card">
       <div className="score-header">
         <h3>{title}</h3>
         <div className="score-display">
-          <span className="score-value">{score}</span>
+          <span className="score-value">{Math.round(score)}</span>
           <span className="score-max">/{maxScore}</span>
         </div>
       </div>
@@ -32,6 +46,39 @@ const Results = () => {
         ></div>
       </div>
       <p className="score-description">{description}</p>
+      {details && (
+        <div className="score-details">
+          {details}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderFormulaDetails = (calculation) => (
+    <div className="formula-details">
+      <div className="formula-header">
+        <span className="formula-name">{calculation.name}</span>
+        <span className="formula-score">{Math.round(calculation.score)}/{calculation.max_points}</span>
+      </div>
+      <div className="formula-info">
+        <p><strong>Formula:</strong> {calculation.formula}</p>
+        <p><strong>Weight:</strong> {calculation.weight}%</p>
+        {calculation.variables_used && Object.keys(calculation.variables_used).length > 0 && (
+          <div className="variables-used">
+            <strong>Variables:</strong>
+            <ul>
+              {Object.entries(calculation.variables_used).map(([key, value]) => (
+                <li key={key}>{key}: {value}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {calculation.missing_variables && calculation.missing_variables.length > 0 && (
+          <div className="missing-variables">
+            <strong>Missing Variables:</strong> {calculation.missing_variables.join(', ')}
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -60,46 +107,100 @@ const Results = () => {
             <div 
               className="score-circle"
               style={{ 
-                background: `conic-gradient(${getScoreColor(analysisResult.overall_score || 0, 850)} ${((analysisResult.overall_score || 0) / 850) * 360}deg, rgba(255,255,255,0.1) 0deg)`
+                background: `conic-gradient(${getScoreColor(finalResult.final_credit_score || 0, 900)} ${((finalResult.final_credit_score || 0) / 900) * 360}deg, rgba(255,255,255,0.1) 0deg)`
               }}
             >
               <div className="score-inner">
-                <span className="main-score-value">{analysisResult.overall_score || 'N/A'}</span>
+                <span className="main-score-value">{Math.round(finalResult.final_credit_score || 0)}</span>
                 <span className="main-score-label">Credit Score</span>
+                <span className="score-percentage">{Math.round(finalResult.score_percentage || 0)}%</span>
               </div>
             </div>
           </div>
+          {finalResult.total_weighted_score && (
+            <div className="score-breakdown">
+              <p>Total Weighted Score: {Math.round(finalResult.total_weighted_score)}</p>
+              <p>Total Possible Score: {Math.round(finalResult.total_possible_score || 0)}</p>
+            </div>
+          )}
         </div>
 
-        <div className="detailed-scores">
-          {analysisResult.payment_history && renderScoreCard(
-            "Payment History",
-            analysisResult.payment_history,
-            100,
-            "Your track record of making payments on time"
-          )}
-          
-          {analysisResult.credit_utilization && renderScoreCard(
-            "Credit Utilization",
-            Math.round(analysisResult.credit_utilization),
-            100,
-            "Percentage of available credit you're using"
-          )}
-          
-          {analysisResult.credit_age && renderScoreCard(
-            "Credit Age",
-            analysisResult.credit_age,
-            100,
-            "Average age of your credit accounts"
-          )}
-          
-          {analysisResult.credit_mix && renderScoreCard(
-            "Credit Mix",
-            analysisResult.credit_mix,
-            100,
-            "Variety of credit account types you have"
-          )}
-        </div>
+        {/* Section-based Results */}
+        {sections.length > 0 && (
+          <div className="detailed-scores">
+            <h3>📊 Section Breakdown</h3>
+            {sections.map((section, index) => (
+              <div key={index} className="section-results">
+                {renderScoreCard(
+                  section.name,
+                  section.weighted_score || 0,
+                  section.weight || 100,
+                  `Weight: ${section.weight}% of total score`,
+                  <div className="section-calculations">
+                    {section.calculations && section.calculations.map((calc, calcIndex) => (
+                      <div key={calcIndex} className="calculation-result">
+                        {renderFormulaDetails(calc)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Legacy Results (fallback) */}
+        {sections.length === 0 && (
+          <div className="detailed-scores">
+            {analysisResult.payment_history && renderScoreCard(
+              "Payment History",
+              analysisResult.payment_history,
+              100,
+              "Your track record of making payments on time"
+            )}
+            
+            {analysisResult.credit_utilization && renderScoreCard(
+              "Credit Utilization",
+              Math.round(analysisResult.credit_utilization),
+              100,
+              "Percentage of available credit you're using"
+            )}
+            
+            {analysisResult.credit_age && renderScoreCard(
+              "Credit Age",
+              analysisResult.credit_age,
+              100,
+              "Average age of your credit accounts"
+            )}
+            
+            {analysisResult.credit_mix && renderScoreCard(
+              "Credit Mix",
+              analysisResult.credit_mix,
+              100,
+              "Variety of credit account types you have"
+            )}
+          </div>
+        )}
+
+        {/* Data Analysis Summary */}
+        {calculationData.data_analysis && (
+          <div className="data-analysis">
+            <h3>📋 Data Analysis</h3>
+            <div className="analysis-stats">
+              <p><strong>Variables Available:</strong> {calculationData.data_analysis.variables_available}</p>
+              {calculationData.data_analysis.variables_list && (
+                <details className="variables-details">
+                  <summary>View Available Variables ({calculationData.data_analysis.variables_list.length})</summary>
+                  <div className="variables-list">
+                    {calculationData.data_analysis.variables_list.map((variable, index) => (
+                      <span key={index} className="variable-tag">{variable}</span>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          </div>
+        )}
 
         {analysisResult.recommendations && (
           <div className="recommendations">
@@ -124,12 +225,25 @@ const Results = () => {
           </div>
         )}
 
-        {analysisResult.raw_data && (
-          <div className="raw-data-section">
-            <h3>📋 Detailed Information</h3>
-            <div className="raw-data-content">
-              <pre>{JSON.stringify(analysisResult.raw_data, null, 2)}</pre>
+        {/* Show calculation errors if any */}
+        {analysisResult.calculation_error && (
+          <div className="error-section">
+            <h3>⚠️ Calculation Issues</h3>
+            <div className="error-content">
+              <p>There was an issue with the calculation: {analysisResult.calculation_error}</p>
+              <p>The data was extracted successfully, but the credit score calculation encountered problems.</p>
             </div>
+          </div>
+        )}
+
+        {/* Raw extracted data for debugging */}
+        {analysisResult.extracted_data && (
+          <div className="raw-data-section">
+            <h3>📋 Extracted Data</h3>
+            <details className="raw-data-content">
+              <summary>View Raw Extracted Data</summary>
+              <pre>{JSON.stringify(analysisResult.extracted_data, null, 2)}</pre>
+            </details>
           </div>
         )}
       </div>

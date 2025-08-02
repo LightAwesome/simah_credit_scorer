@@ -9,6 +9,67 @@ import os
 router = APIRouter()
 config_handler = ConfigHandler()
 
+def parse_llm_response(llm_output: str) -> List[Dict[str, Any]]:
+    """
+    Parse the LLM response to extract the JSON array of calculation results.
+    Handles various formats that Claude might return.
+    """
+    try:
+        # First, try to parse the entire response as JSON
+        parsed = json.loads(llm_output.strip())
+        if isinstance(parsed, list):
+            return parsed
+        elif isinstance(parsed, dict):
+            return [parsed]
+        else:
+            return []
+    except json.JSONDecodeError:
+        pass
+    
+    # If direct parsing fails, try to extract JSON from markdown code blocks
+    import re
+    
+    # Look for JSON code blocks (```json ... ```)
+    json_pattern = r'```json\s*(.*?)\s*```'
+    matches = re.findall(json_pattern, llm_output, re.DOTALL)
+    
+    for match in matches:
+        try:
+            parsed = json.loads(match.strip())
+            if isinstance(parsed, list):
+                return parsed
+            elif isinstance(parsed, dict):
+                return [parsed]
+        except json.JSONDecodeError:
+            continue
+    
+    # Look for any JSON array pattern in the text
+    array_pattern = r'\[\s*\{.*?\}\s*\]'
+    array_matches = re.findall(array_pattern, llm_output, re.DOTALL)
+    
+    for match in array_matches:
+        try:
+            parsed = json.loads(match.strip())
+            if isinstance(parsed, list):
+                return parsed
+        except json.JSONDecodeError:
+            continue
+    
+    # Look for individual JSON objects and combine them
+    object_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
+    object_matches = re.findall(object_pattern, llm_output)
+    
+    results = []
+    for match in object_matches:
+        try:
+            parsed = json.loads(match.strip())
+            if isinstance(parsed, dict):
+                results.append(parsed)
+        except json.JSONDecodeError:
+            continue
+    
+    return results if results else []
+
 # Initialize Anthropic client
 anthropic_client = anthropic.Anthropic(
     api_key=os.getenv("ANTHROPIC_API_KEY")  # Make sure to set this environment variable
@@ -112,6 +173,16 @@ async def calculate_with_llm(request: CalculateLLMRequest):
             "Make sure to return valid JSON format.\n\n"
             f"Extracted Data:\n{json.dumps(request.extracted_data, indent=2)}\n\n"
             f"Calculations JSON:\n{json.dumps(request.calculations_json, indent=2)}"
+            "Very important warning: Claude Sonnet 3.5 is very sensitive to the format of the input, no need to tell me if anything is missing, if we succeeded, just the below json of the list of dictionaries"
+            '''
+            ```json
+[
+                {"formula 1": "calculated_value"},
+                {"formula 2": "calculated_value"},
+                {"formula 3": "calculated_value"}
+            ]
+            ```
+            '''
         )
         
         # Call Claude Sonnet 3.5
@@ -130,9 +201,13 @@ async def calculate_with_llm(request: CalculateLLMRequest):
         # Extract the response
         llm_output = message.content[0].text
         
+        # Parse the LLM response to extract JSON
+        parsed_results = parse_llm_response(llm_output)
+        
         return {
             "success": True,
-            "results": llm_output,
+            "results": parsed_results,
+            "raw_llm_output": llm_output,
             "message": "Calculations completed successfully using Claude Sonnet 3.5"
         }
         

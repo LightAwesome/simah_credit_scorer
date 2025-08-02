@@ -7,6 +7,9 @@ const Results = () => {
   const navigate = useNavigate();
   const analysisResult = location.state?.analysisResult;
 
+  // Add debugging
+  console.log('Analysis Result:', analysisResult);
+
   if (!analysisResult) {
     navigate('/');
     return null;
@@ -18,7 +21,7 @@ const Results = () => {
 
   // Handle both old and new result formats
   const getCalculationData = () => {
-    // New format from the calculation endpoint
+    // New format from the LLM calculation endpoint
     if (analysisResult.calculation_result && analysisResult.calculation_result.success) {
       return analysisResult.calculation_result;
     }
@@ -26,9 +29,86 @@ const Results = () => {
     return analysisResult;
   };
 
+  // Parse LLM results if they exist
+  const parseLLMResults = (calculationData) => {
+    // Check if we have parsed results already (new format)
+    if (calculationData.results && Array.isArray(calculationData.results)) {
+      return calculationData.results;
+    }
+    
+    // Legacy handling for string results
+    if (calculationData.results && typeof calculationData.results === 'string') {
+      try {
+        // Try to parse the LLM output as JSON
+        const parsed = JSON.parse(calculationData.results);
+        // Handle both array and single object cases
+        if (Array.isArray(parsed)) {
+          return parsed;
+        } else if (typeof parsed === 'object' && parsed !== null) {
+          return [parsed]; // Wrap single object in array
+        }
+        return [];
+      } catch (error) {
+        console.error('Error parsing LLM results:', error);
+        // If JSON parsing fails, try to extract JSON from the string
+        const jsonMatch = calculationData.results.match(/\[.*\]/s);
+        if (jsonMatch) {
+          try {
+            return JSON.parse(jsonMatch[0]);
+          } catch (e) {
+            console.error('Error parsing extracted JSON:', e);
+            // Try to extract single object
+            const singleObjectMatch = calculationData.results.match(/\{.*\}/s);
+            if (singleObjectMatch) {
+              try {
+                const singleResult = JSON.parse(singleObjectMatch[0]);
+                return [singleResult];
+              } catch (e2) {
+                console.error('Error parsing single object:', e2);
+                return [];
+              }
+            }
+            return [];
+          }
+        }
+        return [];
+      }
+    }
+    return [];
+  };
+
   const calculationData = getCalculationData();
+  const llmResults = parseLLMResults(calculationData);
   const finalResult = calculationData.final_result || {};
   const sections = calculationData.sections || [];
+
+  // Add debugging for calculation data
+  console.log('Calculation Data:', calculationData);
+  console.log('LLM Results:', llmResults);
+
+  const renderLLMResults = () => {
+    if (!llmResults || llmResults.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="llm-results-section">
+        <h2>AI Calculation Results</h2>
+        <div className="llm-results-grid">
+          {llmResults.map((result, index) => (
+            <div key={index} className="llm-result-card">
+              {Object.entries(result).map(([formula, value]) => (
+                <div key={formula} className="formula-result">
+                  <div className="formula-name">{formula}</div>
+                  <div className="formula-value">{value}</div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   const renderScoreCard = (title, score, maxScore, description, details = null) => (
     <div className="score-card">
@@ -124,6 +204,9 @@ const Results = () => {
             </div>
           )}
         </div>
+
+        {/* LLM Calculation Results */}
+        {llmResults.length > 0 && renderLLMResults()}
 
         {/* Section-based Results */}
         {sections.length > 0 && (
@@ -246,6 +329,37 @@ const Results = () => {
             </details>
           </div>
         )}
+
+        {/* LLM Results Debug Section */}
+        {calculationData.raw_llm_output && (
+          <div className="raw-data-section">
+            <h3>🤖 LLM Raw Output</h3>
+            <details className="raw-data-content">
+              <summary>View Raw LLM Response</summary>
+              <pre>{calculationData.raw_llm_output}</pre>
+            </details>
+          </div>
+        )}
+
+        {/* Parsed LLM Results Debug Section */}
+        {llmResults.length > 0 && (
+          <div className="raw-data-section">
+            <h3>🔧 Parsed LLM Results</h3>
+            <details className="raw-data-content">
+              <summary>View Parsed LLM Results</summary>
+              <pre>{JSON.stringify(llmResults, null, 2)}</pre>
+            </details>
+          </div>
+        )}
+
+        {/* All Analysis Result Debug */}
+        <div className="raw-data-section">
+          <h3>🔍 Complete Analysis Result (Debug)</h3>
+          <details className="raw-data-content">
+            <summary>View Complete Analysis Result</summary>
+            <pre>{JSON.stringify(analysisResult, null, 2)}</pre>
+          </details>
+        </div>
       </div>
     </div>
   );

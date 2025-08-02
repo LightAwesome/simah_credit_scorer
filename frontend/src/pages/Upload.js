@@ -60,10 +60,14 @@ const Upload = () => {
 
       if (response.ok) {
         const result = await response.json();
-        // Show success message instead of navigating to results
-        alert(`File uploaded successfully! Data extracted: ${JSON.stringify(result.extracted_data, null, 2)}`);
-        // Reset file selection
-        setFile(null);
+        console.log('Upload result:', result); // For debugging
+        
+        // Navigate to results page with the new data format
+        navigate('/results', { 
+          state: { 
+            analysisResult: result 
+          } 
+        });
       } else {
         alert('Error analyzing file. Please try again.');
       }

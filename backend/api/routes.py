@@ -145,9 +145,9 @@ async def generate_text_file_after_extraction(extracted_result: dict) -> str:
         print(f"Error generating text file: {e}")
         raise
 
-async def trigger_calculate_endpoint(calculations_json: dict, extracted_data: dict, txt_file_path: str) -> dict:
+async def trigger_calculate_endpoint(calculations_json: dict, txt_file_path: str) -> dict:
     """
-    Trigger the calculate endpoint with the calculations JSON and extracted data.
+    Trigger the calculate endpoint with the calculations JSON and extracted table data from file.
     """
     try:
         print("Starting LLM calculation...")
@@ -164,21 +164,26 @@ async def trigger_calculate_endpoint(calculations_json: dict, extracted_data: di
         anthropic_client = anthropic.Anthropic(api_key=anthropic_api_key)
         print("Anthropic client initialized")
         
-        # Read the generated text file content
-        print(f"Reading text file: {txt_file_path}")
+        # Read the extracted tables file content
+        print(f"Reading tables file: {txt_file_path}")
+        
+        # Check if file exists
+        if not Path(txt_file_path).exists():
+            raise Exception(f"Tables file not found: {txt_file_path}")
+            
         with open(txt_file_path, 'r', encoding='utf-8') as f:
             txt_content = f.read()
-        print(f"Text file content length: {len(txt_content)} characters")
+        print(f"Tables file content length: {len(txt_content)} characters")
         
         # Prepare the prompt for Claude
         prompt = (
-            "You are a data scientist, please match the values of the variables in the extracted file "
-            "into the formulas found inside the json file to calculate the actual result of each of these formulas. "
-            "Please return the data as a list of dictionaries: [{'formula': 'result'}, {'formula2': 'result2'}, ...]. "
-            "Make sure to return valid JSON format.\n\n"
-            f"Extracted Data from Text File:\n{txt_content}\n\n"
-            f"Additional Extracted Data:\n{json.dumps(extracted_data, indent=2)}\n\n"
-            f"Calculations JSON:\n{json.dumps(calculations_json, indent=2)}"
+            "CRITICAL: You MUST respond with ONLY a JSON array. No text, no explanations, no notes.\n\n"
+            "Calculate these formulas using the data below:\n\n"
+            f"DATA:\n{txt_content}\n\n"
+            f"FORMULAS:\n{json.dumps(calculations_json, indent=2)}\n\n"
+            "RESPOND WITH EXACTLY THIS FORMAT AND NOTHING ELSE:\n"
+            "[{\"Simah Score\": number}, {\"Income Level\": number}, {\"Employment Stability\": number}]\n\n"
+            "DO NOT ADD ANY TEXT BEFORE OR AFTER THE JSON ARRAY."
         )
         
         print(f"Prompt prepared, length: {len(prompt)} characters")
@@ -187,8 +192,9 @@ async def trigger_calculate_endpoint(calculations_json: dict, extracted_data: di
         # Call Claude Sonnet 3.5
         message = anthropic_client.messages.create(
             model="claude-3-5-sonnet-20241022",
-            max_tokens=1000,
+            max_tokens=200,
             temperature=0,
+            system="You are a JSON-only calculator. Output ONLY valid JSON arrays. Any text other than JSON will cause system failure. NO explanations, NO text, ONLY JSON.",
             messages=[
                 {
                     "role": "user",
@@ -203,8 +209,21 @@ async def trigger_calculate_endpoint(calculations_json: dict, extracted_data: di
         llm_output = message.content[0].text
         print(f"LLM raw output: {llm_output}")
         
+        # If the response contains explanations, extract just the JSON part
+        if llm_output.strip().startswith('[') and llm_output.strip().endswith(']'):
+            # Already clean JSON
+            clean_json = llm_output.strip()
+        else:
+            # Extract JSON array from the response
+            json_match = re.search(r'\[\s*\{.*?\}\s*\]', llm_output, re.DOTALL)
+            if json_match:
+                clean_json = json_match.group(0)
+                print(f"Extracted clean JSON: {clean_json}")
+            else:
+                clean_json = llm_output
+        
         # Parse the LLM response to extract JSON
-        parsed_results = parse_llm_response(llm_output)
+        parsed_results = parse_llm_response(clean_json)
         print(f"Parsed results: {parsed_results}")
         
         return {
@@ -222,11 +241,29 @@ async def trigger_calculate_endpoint(calculations_json: dict, extracted_data: di
         raise
 
 
+# @router.post("/upload")
+# async def upload_file(file: UploadFile = File(...)):
+#     temp_dir = tempfile.gettempdir()
+#     safe_name = os.path.basename(file.filename).replace(" ", "_")
+#     temp_path = os.path.join(temp_dir, f"temp_{safe_name}")
+
+#     print(f"Saving to {temp_path}")
+#     with open(temp_path, "wb") as buffer:
+#         shutil.copyfileobj(file.file, buffer)
+
+#     try:
+#         result = extract(temp_path)
+#     finally:
+#         os.remove(temp_path)
+
+#     return JSONResponse(content=result)
+
+
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     temp_dir = tempfile.gettempdir()
-    safe_name = os.path.basename(file.filename).replace(" ", "_")
-    temp_path = os.path.join(temp_dir, f"temp_{safe_name}")
+    safe_name = os.path.basename(file.filename).replace(" ", "")  # Remove all spaces like main branch
+    temp_path = os.path.join(temp_dir, f"temp{safe_name}")       # No underscore like main branch
 
     print(f"Saving to {temp_path}")
     with open(temp_path, "wb") as buffer:
@@ -238,13 +275,8 @@ async def upload_file(file: UploadFile = File(...)):
         extracted_result = extract(temp_path)
         print(f"Extraction completed. Result: {extracted_result}")
         
-        # Generate text file after extraction
-        print("Generating text file...")
-        txt_file_path = await generate_text_file_after_extraction(extracted_result)
-        print(f"Text file generated: {txt_file_path}")
-        
-        # Load calculations JSON from frontend data
-        calculations_json_path = Path(__file__).parent.parent.parent / "frontend" / "src" / "data" / "calculations.json"
+        # Load calculations JSON from backend data
+        calculations_json_path = Path(__file__).parent.parent / "data" / "calculations.json"
         
         print(f"Loading calculations from: {calculations_json_path}")
         with open(calculations_json_path, 'r', encoding='utf-8') as f:
@@ -254,7 +286,9 @@ async def upload_file(file: UploadFile = File(...)):
         # Automatically trigger the calculate endpoint
         try:
             print("Triggering calculation endpoint...")
-            calculation_result = await trigger_calculate_endpoint(calculations_json, extracted_result, txt_file_path)
+            # Use the standard all_tables.txt file instead of generating a new one
+            standard_tables_file = Path(__file__).parent.parent / "extracted_tables_enhanced" / "all_tables.txt"
+            calculation_result = await trigger_calculate_endpoint(calculations_json, str(standard_tables_file))
             print(f"Calculation completed: {calculation_result}")
             
             # Return both extraction and calculation results
@@ -262,8 +296,8 @@ async def upload_file(file: UploadFile = File(...)):
                 "success": True,
                 "extracted_data": extracted_result,
                 "calculation_result": calculation_result,
-                "generated_txt_file": txt_file_path,
-                "message": "File processed, text file generated, and credit score calculated successfully"
+                "tables_file_used": str(standard_tables_file),
+                "message": "File processed and credit score calculated successfully using extracted tables"
             })
             
         except Exception as calc_error:
@@ -273,9 +307,9 @@ async def upload_file(file: UploadFile = File(...)):
                 "success": True,
                 "extracted_data": extracted_result,
                 "calculation_result": None,
-                "generated_txt_file": txt_file_path,
+                "tables_file_used": str(standard_tables_file) if 'standard_tables_file' in locals() else "N/A",
                 "calculation_error": str(calc_error),
-                "message": "File extracted and text file generated successfully, but calculation failed"
+                "message": "File extracted successfully, but calculation failed"
             })
             
     except Exception as extract_error:

@@ -9,7 +9,7 @@ class ConfigHandler:
     """
     
     def __init__(self):
-        self.calculations_path = Path(__file__).parent.parent.parent / "frontend" / "src" / "data" / "calculations.json"
+        self.calculations_path = Path(__file__).parent.parent / "data" / "calculations.json"
     
     def load_calculations_config(self) -> Dict[str, Any]:
         """Load the calculations configuration from JSON file."""

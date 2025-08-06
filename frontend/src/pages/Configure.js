@@ -1,15 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import './Configure.css';
-import calculationsData from '../data/calculations.json';
 
 const Configure = () => {
-  const [calculations, setCalculations] = useState(calculationsData);
+  const [calculations, setCalculations] = useState({ sections: [], variables: {} });
+  const [loading, setLoading] = useState(true);
   const [editingFormula, setEditingFormula] = useState(null);
+  const [editingSection, setEditingSection] = useState(null);
   const [showAddSection, setShowAddSection] = useState(false);
   const [showAddFormula, setShowAddFormula] = useState(null);
   const [selectedVariables, setSelectedVariables] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Fetch calculations data from backend
+  useEffect(() => {
+    const fetchCalculations = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/calculations/formula');
+        if (response.ok) {
+          const result = await response.json();
+          // The backend returns { success: true, config: { ... } }
+          if (result.success && result.config) {
+            setCalculations(result.config);
+          } else {
+            console.error('Invalid response format:', result);
+            alert('Invalid response format from server');
+          }
+        } else {
+          console.error('Failed to fetch calculations:', response.statusText);
+          alert('Failed to load calculations from server');
+        }
+      } catch (error) {
+        console.error('Error fetching calculations:', error);
+        alert('Error connecting to server');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCalculations();
+  }, []);
 
   const handleEditFormula = (sectionIndex, calculationIndex) => {
     setEditingFormula({ sectionIndex, calculationIndex });
@@ -33,6 +64,20 @@ const Configure = () => {
       updatedCalculations.sections.splice(sectionIndex, 1);
       setCalculations(updatedCalculations);
     }
+  };
+
+  const handleEditSection = (sectionIndex) => {
+    setEditingSection(sectionIndex);
+  };
+
+  const handleSaveSection = (sectionIndex, updatedSection) => {
+    const updatedCalculations = { ...calculations };
+    updatedCalculations.sections[sectionIndex] = { 
+      ...updatedCalculations.sections[sectionIndex], 
+      ...updatedSection 
+    };
+    setCalculations(updatedCalculations);
+    setEditingSection(null);
   };
 
   const handleSaveFormula = (sectionIndex, calculationIndex, updatedCalculation) => {
@@ -224,6 +269,13 @@ const Configure = () => {
             <div className="table-cell"></div>
             <div className="table-cell actions">
               <button 
+                className="edit-btn"
+                onClick={() => handleEditSection(sectionIndex)}
+                title="Edit Section"
+              >
+                ✏️
+              </button>
+              <button 
                 className="delete-section-btn"
                 onClick={() => handleDeleteSection(sectionIndex)}
                 title="Delete Section"
@@ -309,59 +361,77 @@ const Configure = () => {
 
   return (
     <div className="configure-container">
-      <div className="configure-header">
-        <img src="/markaba-logo.png" alt="Markaba" className="logo" />
-        <h1>Configure Credit Scoring</h1>
-        <div className="header-buttons">
-          <button className="add-section-button" onClick={() => setShowAddSection(true)}>
-            + Add Section
-          </button>
-          <button className="save-button" onClick={saveCalculations}>
-            Save Changes
-          </button>
+      {loading ? (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading calculations...</p>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="configure-header">
+            <img src="/markaba-logo.png" alt="Markaba" className="logo" />
+            <h1>Configure Credit Scoring</h1>
+            <div className="header-buttons">
+              <button className="add-section-button" onClick={() => setShowAddSection(true)}>
+                + Add Section
+              </button>
+              <button className="save-button" onClick={saveCalculations}>
+                Save Changes
+              </button>
+            </div>
+          </div>
 
-      <div className="main-layout">
-        {/* Variables Library - Left Side */}
-        <div className="variables-sidebar">
-          <VariableSelector />
-        </div>
+          <div className="main-layout">
+            {/* Variables Library - Left Side */}
+            <div className="variables-sidebar">
+              <VariableSelector />
+            </div>
 
-        {/* Calculations Table - Right Side */}
-        <div className="calculations-panel">
-          <CalculationsTable />
-        </div>
-      </div>
+            {/* Calculations Table - Right Side */}
+            <div className="calculations-panel">
+              <CalculationsTable />
+            </div>
+          </div>
 
-      {/* Edit Formula Modal */}
-      {editingFormula && (
-        <FormulaEditor
-          section={calculations.sections[editingFormula.sectionIndex]}
-          calculation={calculations.sections[editingFormula.sectionIndex].calculations[editingFormula.calculationIndex]}
-          variables={calculations.variables}
-          onSave={(updatedCalculation) => handleSaveFormula(editingFormula.sectionIndex, editingFormula.calculationIndex, updatedCalculation)}
-          onCancel={() => setEditingFormula(null)}
-        />
-      )}
+          {/* Edit Formula Modal */}
+          {editingFormula && (
+            <FormulaEditor
+              section={calculations.sections[editingFormula.sectionIndex]}
+              calculation={calculations.sections[editingFormula.sectionIndex].calculations[editingFormula.calculationIndex]}
+              variables={calculations.variables}
+              onSave={(updatedCalculation) => handleSaveFormula(editingFormula.sectionIndex, editingFormula.calculationIndex, updatedCalculation)}
+              onCancel={() => setEditingFormula(null)}
+            />
+          )}
 
-      {/* Add Formula Modal */}
-      {showAddFormula !== null && (
-        <FormulaEditor
-          section={calculations.sections[showAddFormula]}
-          calculation={null}
-          variables={calculations.variables}
-          onSave={(newCalculation) => handleSaveFormula(showAddFormula, -1, newCalculation)}
-          onCancel={() => setShowAddFormula(null)}
-        />
-      )}
+          {/* Edit Section Modal */}
+          {editingSection !== null && (
+            <SectionEditor
+              section={calculations.sections[editingSection]}
+              onSave={(updatedSection) => handleSaveSection(editingSection, updatedSection)}
+              onCancel={() => setEditingSection(null)}
+            />
+          )}
 
-      {/* Add Section Modal */}
-      {showAddSection && (
-        <SectionEditor
-          onSave={handleAddSection}
-          onCancel={() => setShowAddSection(false)}
-        />
+          {/* Add Formula Modal */}
+          {showAddFormula !== null && (
+            <FormulaEditor
+              section={calculations.sections[showAddFormula]}
+              calculation={null}
+              variables={calculations.variables}
+              onSave={(newCalculation) => handleSaveFormula(showAddFormula, -1, newCalculation)}
+              onCancel={() => setShowAddFormula(null)}
+            />
+          )}
+
+          {/* Add Section Modal */}
+          {showAddSection && (
+            <SectionEditor
+              onSave={handleAddSection}
+              onCancel={() => setShowAddSection(false)}
+            />
+          )}
+        </>
       )}
     </div>
   );
@@ -509,11 +579,11 @@ const FormulaEditor = ({ section, calculation, variables, onSave, onCancel }) =>
 };
 
 // Section Editor Component
-const SectionEditor = ({ onSave, onCancel }) => {
+const SectionEditor = ({ section, onSave, onCancel }) => {
   const [sectionData, setSectionData] = useState({
-    name: '',
-    weight: 0,
-    calculations: []
+    name: section?.name || '',
+    weight: section?.weight || 0,
+    calculations: section?.calculations || []
   });
 
   const handleSave = () => {
@@ -527,7 +597,7 @@ const SectionEditor = ({ onSave, onCancel }) => {
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        <h3>Add New Section</h3>
+        <h3>{section ? 'Edit Section' : 'Add New Section'}</h3>
         
         <div className="form-group">
           <label>Section Name:</label>

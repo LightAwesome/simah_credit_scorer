@@ -20,20 +20,21 @@ if anthropic_api_key_debug:
 else:
     print("ANTHROPIC_API_KEY NOT FOUND in environment variables")
 
-def parse_llm_response(llm_output: str) -> List[Dict[str, Any]]:
+def parse_llm_response(llm_output: str) -> Dict[str, Any]:
     """
     Parse the LLM response to extract the JSON array of calculation results.
-    Handles various formats that Claude might return.
+    Handles various formats that Claude might return and structures the response
+    with overall score and sections.
     """
     try:
         # First, try to parse the entire response as JSON
         parsed = json.loads(llm_output.strip())
         if isinstance(parsed, list):
-            return parsed
+            return _structure_parsed_results(parsed)
         elif isinstance(parsed, dict):
-            return [parsed]
+            return _structure_parsed_results([parsed])
         else:
-            return []
+            return {"overall_score": None, "sections": []}
     except json.JSONDecodeError:
         pass
     
@@ -48,9 +49,9 @@ def parse_llm_response(llm_output: str) -> List[Dict[str, Any]]:
         try:
             parsed = json.loads(match.strip())
             if isinstance(parsed, list):
-                return parsed
+                return _structure_parsed_results(parsed)
             elif isinstance(parsed, dict):
-                return [parsed]
+                return _structure_parsed_results([parsed])
         except json.JSONDecodeError:
             continue
     
@@ -62,7 +63,7 @@ def parse_llm_response(llm_output: str) -> List[Dict[str, Any]]:
         try:
             parsed = json.loads(match.strip())
             if isinstance(parsed, list):
-                return parsed
+                return _structure_parsed_results(parsed)
         except json.JSONDecodeError:
             continue
     
@@ -79,7 +80,42 @@ def parse_llm_response(llm_output: str) -> List[Dict[str, Any]]:
         except json.JSONDecodeError:
             continue
     
-    return results if results else []
+    return _structure_parsed_results(results) if results else {"overall_score": None, "sections": []}
+
+def _structure_parsed_results(parsed_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Structure the parsed results into overall score and sections format.
+    """
+    overall_score = None
+    sections = []
+    
+    for result in parsed_results:
+        # Check if this is the overall score entry
+        if "Overall Credit Score" in result:
+            overall_score = result["Overall Credit Score"]
+        else:
+            # This is a section
+            for section_name, section_data in result.items():
+                if isinstance(section_data, dict):
+                    section_total = None
+                    formulas = []
+                    
+                    for key, value in section_data.items():
+                        if key.startswith("total_"):
+                            section_total = value
+                        else:
+                            formulas.append({"name": key, "value": value})
+                    
+                    sections.append({
+                        "name": section_name,
+                        "total": section_total,
+                        "formulas": formulas
+                    })
+    
+    return {
+        "overall_score": overall_score,
+        "sections": sections
+    }
 
 # Initialize Anthropic client with proper error handling
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -206,7 +242,7 @@ async def calculate_with_llm(request: CalculateLLMRequest):
         prompt = (
             "You are a data scientist, please match the values of the variables in the extracted file "
             "into the formulas found inside the json file to calculate the actual result of each of these formulas. "
-            "Please return the data as a list of dictionaries: [{'formula': 'result'}, {'formula': 'result'}, ...]. "
+            "Please return the data as a list of dictionaries: [{'section1': {'total_section1': 'result1 + result2+...', 'formula1': 'result1', 'formula2': 'result2', ...}}, {'section2': {'total_section2': 'result1+result2+...', 'formula1': 'result1', 'formula2': 'result2', ...}}, ...]. "
             "Make sure to return valid JSON format.\n\n"
             f"Extracted Data:\n{json.dumps(request.extracted_data, indent=2)}\n\n"
             f"Calculations JSON:\n{json.dumps(request.calculations_json, indent=2)}"
@@ -217,27 +253,21 @@ async def calculate_with_llm(request: CalculateLLMRequest):
             ''' 
             ```json
 [
-            {"section 1": "formula 1" + "formula 2" +... + "formula n"},
-            {"formula 1": "calculated_value"},
-            {"formula 2": "calculated_value"},
-            {"formula 3": "calculated_value"},
-                .
-                .
-                .
-            {"formula n": "calculated_value"},
-
-            {"section 2": "formula 1" + "formula 2" +... + "formula n"},
-            {"formula 1": "calculated_value"},
-            {"formula 2": "calculated_value"},
-            {"formula 3": "calculated_value"},
-                .
-                .
-                .
-            {"formula n": "calculated_value"},
-            .
-            .
-            .
-            ]
+            {'section1': 
+                {'total_section1': 'result1 + result2+...', 
+                'formula1': 'result1', 
+                'formula2': 'result2', 
+                ...},
+            {'section2': 
+                {'total_section2': 'result1+result2+...', 
+                'formula1': 'result1', 
+                'formula2': 'result2', 
+                ...},
+            ...
+            },
+            {'Overall Credit Score': 'sum of (all the sections) * (weight of the section) / 100'}
+]
+            
             ```
             '''
         )
@@ -264,7 +294,8 @@ async def calculate_with_llm(request: CalculateLLMRequest):
         
         return {
             "success": True,
-            "results": parsed_results,
+            "overall_score": parsed_results.get("overall_score"),
+            "sections": parsed_results.get("sections", []),
             "raw_llm_output": llm_output,
             "message": "Calculations completed successfully using Claude Sonnet 3.5"
         }

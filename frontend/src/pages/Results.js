@@ -31,7 +31,15 @@ const Results = () => {
 
   // Parse LLM results if they exist
   const parseLLMResults = (calculationData) => {
-    // Check if we have parsed results already (new format)
+    // New format with overall_score and sections
+    if (calculationData.overall_score !== undefined && calculationData.sections) {
+      return {
+        overall_score: calculationData.overall_score,
+        sections: calculationData.sections
+      };
+    }
+    
+    // Legacy format - check if we have parsed results already
     if (calculationData.results && Array.isArray(calculationData.results)) {
       return calculationData.results;
     }
@@ -86,28 +94,67 @@ const Results = () => {
   console.log('Calculation Data:', calculationData);
   console.log('LLM Results:', llmResults);
 
+  // Get overall score from new structure or legacy
+  const getOverallScore = () => {
+    if (llmResults && llmResults.overall_score !== undefined) {
+      return llmResults.overall_score;
+    }
+    return finalResult.final_credit_score || 0;
+  };
+
   const renderLLMResults = () => {
-    if (!llmResults || llmResults.length === 0) {
-      return null;
+    // Handle new structured format
+    if (llmResults && llmResults.sections && Array.isArray(llmResults.sections)) {
+      return (
+        <div className="llm-results-section">
+          <h2>AI Calculation Results</h2>
+          <div className="llm-sections-grid">
+            {llmResults.sections.map((section, index) => (
+              <div key={index} className="llm-section-card">
+                <div className="section-header">
+                  <h3 className="section-title">{section.name}</h3>
+                  <div className="section-total">
+                    <span className="total-label">Total:</span>
+                    <span className="total-value">{section.total || 'N/A'}</span>
+                  </div>
+                </div>
+                <div className="section-formulas">
+                  {section.formulas && section.formulas.map((formula, formulaIndex) => (
+                    <div key={formulaIndex} className="formula-result">
+                      <div className="formula-name">{formula.name}</div>
+                      <div className="formula-value">{formula.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
     }
 
-    return (
-      <div className="llm-results-section">
-        <h2>AI Calculation Results</h2>
-        <div className="llm-results-grid">
-          {llmResults.map((result, index) => (
-            <div key={index} className="llm-result-card">
-              {Object.entries(result).map(([formula, value]) => (
-                <div key={formula} className="formula-result">
-                  <div className="formula-name">{formula}</div>
-                  <div className="formula-value">{value}</div>
-                </div>
-              ))}
-            </div>
-          ))}
+    // Handle legacy format
+    if (llmResults && Array.isArray(llmResults) && llmResults.length > 0) {
+      return (
+        <div className="llm-results-section">
+          <h2>AI Calculation Results</h2>
+          <div className="llm-results-grid">
+            {llmResults.map((result, index) => (
+              <div key={index} className="llm-result-card">
+                {Object.entries(result).map(([formula, value]) => (
+                  <div key={formula} className="formula-result">
+                    <div className="formula-name">{formula}</div>
+                    <div className="formula-value">{value}</div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+
+    return null;
   };
 
   const renderScoreCard = (title, score, maxScore, description, details = null) => (
@@ -187,13 +234,13 @@ const Results = () => {
             <div 
               className="score-circle"
               style={{ 
-                background: `conic-gradient(${getScoreColor(finalResult.final_credit_score || 0, 900)} ${((finalResult.final_credit_score || 0) / 900) * 360}deg, rgba(255,255,255,0.1) 0deg)`
+                background: `conic-gradient(${getScoreColor(getOverallScore(), 900)} ${(getOverallScore() / 900) * 360}deg, rgba(255,255,255,0.1) 0deg)`
               }}
             >
               <div className="score-inner">
-                <span className="main-score-value">{Math.round(finalResult.final_credit_score || 0)}</span>
+                <span className="main-score-value">{Math.round(getOverallScore())}</span>
                 <span className="main-score-label">Credit Score</span>
-                <span className="score-percentage">{Math.round(finalResult.score_percentage || 0)}%</span>
+                <span className="score-percentage">{Math.round((getOverallScore() / 900) * 100)}%</span>
               </div>
             </div>
           </div>
@@ -206,31 +253,8 @@ const Results = () => {
         </div>
 
         {/* LLM Calculation Results */}
-        {llmResults.length > 0 && renderLLMResults()}
+        {llmResults && renderLLMResults()}
 
-        {/* Section-based Results */}
-        {sections.length > 0 && (
-          <div className="detailed-scores">
-            <h3>📊 Section Breakdown</h3>
-            {sections.map((section, index) => (
-              <div key={index} className="section-results">
-                {renderScoreCard(
-                  section.name,
-                  section.weighted_score || 0,
-                  section.weight || 100,
-                  `Weight: ${section.weight}% of total score`,
-                  <div className="section-calculations">
-                    {section.calculations && section.calculations.map((calc, calcIndex) => (
-                      <div key={calcIndex} className="calculation-result">
-                        {renderFormulaDetails(calc)}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Legacy Results (fallback) */}
         {sections.length === 0 && (
@@ -342,7 +366,7 @@ const Results = () => {
         )}
 
         {/* Parsed LLM Results Debug Section */}
-        {llmResults.length > 0 && (
+        {llmResults && (
           <div className="raw-data-section">
             <h3>🔧 Parsed LLM Results</h3>
             <details className="raw-data-content">

@@ -546,6 +546,73 @@
   font-weight: 600;
 }
 
+/* New sectioned layout styles */
+.llm-sections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.llm-section-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(119, 255, 153, 0.15);
+  transition: all 0.3s ease;
+}
+
+.llm-section-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(119, 255, 153, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(119, 255, 153, 0.1);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid rgba(119, 255, 153, 0.2);
+}
+
+.section-title {
+  color: #77ff99;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.section-total {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(119, 255, 153, 0.15);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(119, 255, 153, 0.3);
+}
+
+.total-label {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.total-value {
+  color: #77ff99;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.section-formulas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Legacy grid styles */
 .llm-results-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -599,8 +666,20 @@
 
 /* Responsive design for LLM results */
 @media (max-width: 768px) {
+  .llm-sections-grid,
   .llm-results-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .section-total {
+    align-self: stretch;
+    justify-content: center;
   }
   
   .formula-result {

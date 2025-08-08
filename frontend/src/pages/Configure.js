@@ -273,11 +273,15 @@ const Configure = () => {
             </div>
             
             <div className="table-cell section-percentage">
-              {section.weight}% ({section.max_points} pts)
+              {section.weight}%
             </div>
             
             <div className="table-cell"></div>
-            <div className="table-cell"></div>
+            
+            <div className="table-cell max-points">
+              {section.max_points}
+            </div>
+            
             <div className="table-cell actions">
               <button 
                 className="edit-btn"
@@ -322,10 +326,6 @@ const Configure = () => {
                 </div>
               </div>
               
-              <div className="table-cell variable-weight">
-                -
-              </div>
-              
               <div className="table-cell max-points">
                 {calculation.max_points}
               </div>
@@ -361,7 +361,6 @@ const Configure = () => {
                 + Add Formula to {section.name}
               </button>
             </div>
-            <div className="table-cell"></div>
             <div className="table-cell"></div>
             <div className="table-cell"></div>
           </div>

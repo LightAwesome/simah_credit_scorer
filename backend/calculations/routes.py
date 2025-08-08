@@ -15,9 +15,7 @@ config_handler = ConfigHandler()
 
 # Debug: Check if environment variables are loaded
 anthropic_api_key_debug = os.getenv("ANTHROPIC_API_KEY")
-if anthropic_api_key_debug:
-    print(f"ANTHROPIC_API_KEY found: {anthropic_api_key_debug[:10]}...")
-else:
+if not anthropic_api_key_debug:
     print("ANTHROPIC_API_KEY NOT FOUND in environment variables")
 
 def parse_llm_response(llm_output: str) -> Dict[str, Any]:
@@ -125,7 +123,6 @@ if not anthropic_api_key:
 else:
     try:
         anthropic_client = anthropic.Anthropic(api_key=anthropic_api_key)
-        print(f"Anthropic client initialized with API key: {anthropic_api_key[:10]}...")
     except Exception as e:
         print(f"ERROR initializing Anthropic client: {e}")
         anthropic_client = None

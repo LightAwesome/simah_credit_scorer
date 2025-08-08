@@ -206,7 +206,6 @@ async def update_formula_configuration(request: FormulaUpdateRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@router.post("/calculate")
 async def calculate_with_llm(request: CalculateLLMRequest):
     """
     Calculate credit score using Claude Sonnet 3.5.

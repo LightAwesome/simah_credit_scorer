@@ -21,7 +21,14 @@ const Results = () => {
 
   // Handle both old and new result formats
   const getCalculationData = () => {
-    // New format from the LLM calculation endpoint
+    // New simplified format with overall_score and sections directly
+    if (analysisResult.overall_score !== undefined && analysisResult.sections) {
+      return {
+        overall_score: analysisResult.overall_score,
+        sections: analysisResult.sections
+      };
+    }
+    // Legacy format from the LLM calculation endpoint
     if (analysisResult.calculation_result && analysisResult.calculation_result.success) {
       return analysisResult.calculation_result;
     }
@@ -31,7 +38,7 @@ const Results = () => {
 
   // Parse LLM results if they exist
   const parseLLMResults = (calculationData) => {
-    // New format with overall_score and sections
+    // New simplified format with overall_score and sections directly
     if (calculationData.overall_score !== undefined && calculationData.sections) {
       return {
         overall_score: calculationData.overall_score,
@@ -255,135 +262,6 @@ const Results = () => {
         {/* LLM Calculation Results */}
         {llmResults && renderLLMResults()}
 
-
-        {/* Legacy Results (fallback) */}
-        {sections.length === 0 && (
-          <div className="detailed-scores">
-            {analysisResult.payment_history && renderScoreCard(
-              "Payment History",
-              analysisResult.payment_history,
-              100,
-              "Your track record of making payments on time"
-            )}
-            
-            {analysisResult.credit_utilization && renderScoreCard(
-              "Credit Utilization",
-              Math.round(analysisResult.credit_utilization),
-              100,
-              "Percentage of available credit you're using"
-            )}
-            
-            {analysisResult.credit_age && renderScoreCard(
-              "Credit Age",
-              analysisResult.credit_age,
-              100,
-              "Average age of your credit accounts"
-            )}
-            
-            {analysisResult.credit_mix && renderScoreCard(
-              "Credit Mix",
-              analysisResult.credit_mix,
-              100,
-              "Variety of credit account types you have"
-            )}
-          </div>
-        )}
-
-        {/* Data Analysis Summary */}
-        {calculationData.data_analysis && (
-          <div className="data-analysis">
-            <h3>📋 Data Analysis</h3>
-            <div className="analysis-stats">
-              <p><strong>Variables Available:</strong> {calculationData.data_analysis.variables_available}</p>
-              {calculationData.data_analysis.variables_list && (
-                <details className="variables-details">
-                  <summary>View Available Variables ({calculationData.data_analysis.variables_list.length})</summary>
-                  <div className="variables-list">
-                    {calculationData.data_analysis.variables_list.map((variable, index) => (
-                      <span key={index} className="variable-tag">{variable}</span>
-                    ))}
-                  </div>
-                </details>
-              )}
-            </div>
-          </div>
-        )}
-
-        {analysisResult.recommendations && (
-          <div className="recommendations">
-            <h3>💡 Recommendations</h3>
-            <div className="recommendations-list">
-              {analysisResult.recommendations.map((recommendation, index) => (
-                <div key={index} className="recommendation-item">
-                  <div className="recommendation-icon">✓</div>
-                  <p>{recommendation}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {analysisResult.summary && (
-          <div className="summary-section">
-            <h3>📊 Analysis Summary</h3>
-            <div className="summary-content">
-              <p>{analysisResult.summary}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Show calculation errors if any */}
-        {analysisResult.calculation_error && (
-          <div className="error-section">
-            <h3>⚠️ Calculation Issues</h3>
-            <div className="error-content">
-              <p>There was an issue with the calculation: {analysisResult.calculation_error}</p>
-              <p>The data was extracted successfully, but the credit score calculation encountered problems.</p>
-            </div>
-          </div>
-        )}
-
-        {/* Raw extracted data for debugging */}
-        {analysisResult.extracted_data && (
-          <div className="raw-data-section">
-            <h3>📋 Extracted Data</h3>
-            <details className="raw-data-content">
-              <summary>View Raw Extracted Data</summary>
-              <pre>{JSON.stringify(analysisResult.extracted_data, null, 2)}</pre>
-            </details>
-          </div>
-        )}
-
-        {/* LLM Results Debug Section */}
-        {calculationData.raw_llm_output && (
-          <div className="raw-data-section">
-            <h3>🤖 LLM Raw Output</h3>
-            <details className="raw-data-content">
-              <summary>View Raw LLM Response</summary>
-              <pre>{calculationData.raw_llm_output}</pre>
-            </details>
-          </div>
-        )}
-
-        {/* Parsed LLM Results Debug Section */}
-        {llmResults && (
-          <div className="raw-data-section">
-            <h3>🔧 Parsed LLM Results</h3>
-            <details className="raw-data-content">
-              <summary>View Parsed LLM Results</summary>
-              <pre>{JSON.stringify(llmResults, null, 2)}</pre>
-            </details>
-          </div>
-        )}
-
-        {/* All Analysis Result Debug */}
-        <div className="raw-data-section">
-          <h3>🔍 Complete Analysis Result (Debug)</h3>
-          <details className="raw-data-content">
-            <summary>View Complete Analysis Result</summary>
-            <pre>{JSON.stringify(analysisResult, null, 2)}</pre>
-          </details>
-        </div>
       </div>
     </div>
   );

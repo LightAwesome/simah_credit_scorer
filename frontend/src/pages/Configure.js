@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Configure.css';
 
 const Configure = () => {
@@ -11,6 +12,11 @@ const Configure = () => {
   const [selectedVariables, setSelectedVariables] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const navigate = useNavigate();
+
+  const handleBackToUpload = () => {
+    navigate('/');
+  };
 
   // Fetch calculations data from backend
   useEffect(() => {
@@ -387,6 +393,9 @@ const Configure = () => {
               </button>
               <button className="save-button" onClick={saveCalculations}>
                 Save Changes
+              </button>
+              <button className="back-to-upload-button" onClick={handleBackToUpload}>
+                Back to Upload
               </button>
             </div>
           </div>

@@ -72,35 +72,6 @@ def parse_llm_response(llm_output: str) -> List[Dict[str, Any]]:
     
     return results if results else []
 
-@router.get("/health")
-def health_check():
-    return {"status": "healthy"}
-
-@router.get("/test-results")
-def test_results():
-    """Test endpoint to return sample LLM calculation results for frontend testing."""
-    return {
-        "success": True,
-        "extracted_data": {
-            "credit_score": 750,
-            "monthly_income": 15000,
-            "employment_duration_months": 36
-        },
-        "calculation_result": {
-            "success": True,
-            "results": [
-                {"Simah Score": "166.67"},
-                {"Income Level": "120"},
-                {"Employment Stability": "80"}
-            ],
-            "raw_llm_output": '```json\n[\n    {"Simah Score": "166.67"},\n    {"Income Level": "120"},\n    {"Employment Stability": "80"}\n]\n```',
-            "txt_file_used": "/path/to/file.txt",
-            "message": "Calculations completed successfully using Claude Sonnet 3.5 with generated text file"
-        },
-        "generated_txt_file": "/path/to/extracted_data.txt",
-        "message": "File processed, text file generated, and credit score calculated successfully"
-    }
-
 # load environment variables
 from dotenv import load_dotenv
 load_dotenv()
@@ -259,10 +230,8 @@ async def upload_file(file: UploadFile = File(...)):
             # Return both extraction and calculation results
             return JSONResponse(content={
                 "success": True,
-                "extracted_data": extracted_result,
-                "calculation_result": calculation_result,
-                "tables_file_used": str(standard_tables_file),
-                "message": "File processed and credit score calculated successfully using extracted tables"
+                "overall_score": calculation_result.get("overall_score"),
+                "sections": calculation_result.get("sections", [])
             })
             
         except Exception as calc_error:
@@ -270,11 +239,9 @@ async def upload_file(file: UploadFile = File(...)):
             # Return extraction result even if calculation fails
             return JSONResponse(content={
                 "success": True,
-                "extracted_data": extracted_result,
-                "calculation_result": None,
-                "tables_file_used": str(standard_tables_file) if 'standard_tables_file' in locals() else "N/A",
-                "calculation_error": str(calc_error),
-                "message": "File extracted successfully, but calculation failed"
+                "overall_score": None,
+                "sections": [],
+                "calculation_error": str(calc_error)
             })
             
     except Exception as extract_error:
@@ -283,8 +250,7 @@ async def upload_file(file: UploadFile = File(...)):
             status_code=422,
             content={
                 "success": False,
-                "error": str(extract_error),
-                "message": "Failed to extract data from file"
+                "error": str(extract_error)
             }
         )
     finally:

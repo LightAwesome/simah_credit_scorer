@@ -62,7 +62,7 @@
   gap: 1rem;
 }
 
-.add-section-button, .save-button {
+.add-section-button, .save-button, .back-to-upload-button {
   background: #77ff99;
   color: #1A1A3A;
   border: none;
@@ -73,10 +73,19 @@
   transition: all 0.3s ease;
 }
 
-.add-section-button:hover, .save-button:hover {
+.add-section-button:hover, .save-button:hover, .back-to-upload-button:hover {
   background: #66ee88;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(119, 255, 153, 0.3);
+}
+
+.back-to-upload-button {
+  background: #4a90e2;
+  color: white;
+}
+
+.back-to-upload-button:hover {
+  background: #357abd;
 }
 
 /* Main Layout - Side by Side */
@@ -734,6 +743,17 @@
   
   .configure-header h1 {
     font-size: 2rem;
+  }
+  
+  .header-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  
+  .add-section-button, .save-button, .back-to-upload-button {
+    width: 100%;
+    margin: 0;
   }
   
   .main-layout {

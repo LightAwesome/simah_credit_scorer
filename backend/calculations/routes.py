@@ -5,9 +5,20 @@ from .config_handler import ConfigHandler
 import anthropic
 import json
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 router = APIRouter()
 config_handler = ConfigHandler()
+
+# Debug: Check if environment variables are loaded
+anthropic_api_key_debug = os.getenv("ANTHROPIC_API_KEY")
+if anthropic_api_key_debug:
+    print(f"ANTHROPIC_API_KEY found: {anthropic_api_key_debug[:10]}...")
+else:
+    print("ANTHROPIC_API_KEY NOT FOUND in environment variables")
 
 def parse_llm_response(llm_output: str) -> List[Dict[str, Any]]:
     """
@@ -70,10 +81,18 @@ def parse_llm_response(llm_output: str) -> List[Dict[str, Any]]:
     
     return results if results else []
 
-# Initialize Anthropic client
-anthropic_client = anthropic.Anthropic(
-    api_key=os.getenv("ANTHROPIC_API_KEY")  # Make sure to set this environment variable
-)
+# Initialize Anthropic client with proper error handling
+anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+if not anthropic_api_key:
+    print("WARNING: ANTHROPIC_API_KEY not found in environment variables")
+    anthropic_client = None
+else:
+    try:
+        anthropic_client = anthropic.Anthropic(api_key=anthropic_api_key)
+        print(f"Anthropic client initialized with API key: {anthropic_api_key[:10]}...")
+    except Exception as e:
+        print(f"ERROR initializing Anthropic client: {e}")
+        anthropic_client = None
 
 class FormulaUpdateRequest(BaseModel):
     """Request model for updating calculations configuration."""
@@ -158,28 +177,66 @@ async def calculate_with_llm(request: CalculateLLMRequest):
     Accepts calculations JSON and extracted data, sends them to Claude,
     and returns Claude's output as a list of dictionaries.
     """
+    
     try:
+        
         if not request.extracted_data:
+            print("ERROR: Extracted data is empty")
             raise HTTPException(status_code=400, detail="Extracted data cannot be empty")
         
         if not request.calculations_json:
+            print("ERROR: Calculations JSON is empty")
             raise HTTPException(status_code=400, detail="Calculations JSON cannot be empty")
+                
+        # Get the API key from environment
+        anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not anthropic_api_key:
+            print("ERROR: ANTHROPIC_API_KEY not found in environment variables")
+            raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not found in environment variables")
+                
+        # Always create a fresh Anthropic client to ensure it has the correct API key
+        try:
+            anthropic_client = anthropic.Anthropic(api_key=anthropic_api_key)
+            print("Anthropic client created successfully")
+        except Exception as e:
+            print(f"ERROR creating Anthropic client: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to create Anthropic client: {str(e)}")
         
         # Prepare the prompt for Claude
         prompt = (
             "You are a data scientist, please match the values of the variables in the extracted file "
             "into the formulas found inside the json file to calculate the actual result of each of these formulas. "
-            "Please return the data as a list of dictionaries: [{'formula': 'result'}, {'formula2': 'result2'}, ...]. "
+            "Please return the data as a list of dictionaries: [{'formula': 'result'}, {'formula': 'result'}, ...]. "
             "Make sure to return valid JSON format.\n\n"
             f"Extracted Data:\n{json.dumps(request.extracted_data, indent=2)}\n\n"
             f"Calculations JSON:\n{json.dumps(request.calculations_json, indent=2)}"
             "Very important warning: Claude Sonnet 3.5 is very sensitive to the format of the input, no need to tell me if anything is missing, if we succeeded, just the below json of the list of dictionaries"
-            '''
+            "It is also very important to perform all the calculations in the formulas, do not skip any of them"
+            "If the value of the calculation is not found or invalid variables, return 0"
+            "DO NOT LEAVE OUT ANY OF THE FORMULAS!!!!This is a warning"
+            ''' 
             ```json
 [
-                {"formula 1": "calculated_value"},
-                {"formula 2": "calculated_value"},
-                {"formula 3": "calculated_value"}
+            {"section 1": "formula 1" + "formula 2" +... + "formula n"},
+            {"formula 1": "calculated_value"},
+            {"formula 2": "calculated_value"},
+            {"formula 3": "calculated_value"},
+                .
+                .
+                .
+            {"formula n": "calculated_value"},
+
+            {"section 2": "formula 1" + "formula 2" +... + "formula n"},
+            {"formula 1": "calculated_value"},
+            {"formula 2": "calculated_value"},
+            {"formula 3": "calculated_value"},
+                .
+                .
+                .
+            {"formula n": "calculated_value"},
+            .
+            .
+            .
             ]
             ```
             '''
@@ -188,7 +245,7 @@ async def calculate_with_llm(request: CalculateLLMRequest):
         # Call Claude Sonnet 3.5
         message = anthropic_client.messages.create(
             model="claude-3-5-sonnet-20241022",
-            max_tokens=1000,
+            max_tokens=2000,
             temperature=0,
             messages=[
                 {
@@ -197,9 +254,10 @@ async def calculate_with_llm(request: CalculateLLMRequest):
                 }
             ]
         )
-        
+                
         # Extract the response
         llm_output = message.content[0].text
+        
         
         # Parse the LLM response to extract JSON
         parsed_results = parse_llm_response(llm_output)
@@ -212,6 +270,9 @@ async def calculate_with_llm(request: CalculateLLMRequest):
         }
         
     except Exception as e:
+        print(f"=== ERROR IN CALCULATE ENDPOINT: {str(e)} ===")
+        import traceback
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"LLM calculation failed: {str(e)}")
 
 @router.get("/formula")
@@ -230,5 +291,47 @@ async def get_current_formula_configuration():
         
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Calculations configuration file not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.get("/variables")
+async def get_variables():
+    """
+    Retrieve the current variables configuration.
+    Returns all available variables organized by categories.
+    """
+    try:
+        variables = config_handler.load_variables()
+        
+        return {
+            "success": True,
+            "variables": variables
+        }
+        
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Variables configuration file not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.put("/variables")
+async def update_variables(variables: Dict[str, list]):
+    """
+    Update the variables configuration.
+    """
+    try:
+        success = config_handler.save_variables(variables)
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to save variables configuration")
+        
+        return {
+            "success": True,
+            "message": "Variables configuration updated successfully",
+            "categories_count": len(variables),
+            "total_variables": sum(len(vars_list) for vars_list in variables.values())
+        }
+        
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")

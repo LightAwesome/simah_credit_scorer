@@ -14,32 +14,45 @@ const Configure = () => {
 
   // Fetch calculations data from backend
   useEffect(() => {
-    const fetchCalculations = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/calculations/formula');
-        if (response.ok) {
-          const result = await response.json();
-          // The backend returns { success: true, config: { ... } }
-          if (result.success && result.config) {
-            setCalculations(result.config);
+        
+        // Fetch both calculations and variables
+        const [calculationsResponse, variablesResponse] = await Promise.all([
+          fetch('/api/calculations/formula'),
+          fetch('/api/calculations/variables')
+        ]);
+        
+        if (calculationsResponse.ok && variablesResponse.ok) {
+          const calculationsResult = await calculationsResponse.json();
+          const variablesResult = await variablesResponse.json();
+          
+          if (calculationsResult.success && variablesResult.success) {
+            setCalculations({
+              ...calculationsResult.config,
+              variables: variablesResult.variables
+            });
           } else {
-            console.error('Invalid response format:', result);
+            console.error('Invalid response format:', { calculationsResult, variablesResult });
             alert('Invalid response format from server');
           }
         } else {
-          console.error('Failed to fetch calculations:', response.statusText);
-          alert('Failed to load calculations from server');
+          console.error('Failed to fetch data:', { 
+            calculationsStatus: calculationsResponse.statusText,
+            variablesStatus: variablesResponse.statusText 
+          });
+          alert('Failed to load data from server');
         }
       } catch (error) {
-        console.error('Error fetching calculations:', error);
+        console.error('Error fetching data:', error);
         alert('Error connecting to server');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCalculations();
+    fetchData();
   }, []);
 
   const handleEditFormula = (sectionIndex, calculationIndex) => {
@@ -245,8 +258,7 @@ const Configure = () => {
         <div className="header-cell">Section</div>
         <div className="header-cell">Weight %</div>
         <div className="header-cell">Formula</div>
-        <div className="header-cell">Weight</div>
-        <div className="header-cell">Max</div>
+        <div className="header-cell">Max Points</div>
         <div className="header-cell">Actions</div>
       </div>
 
@@ -261,10 +273,9 @@ const Configure = () => {
             </div>
             
             <div className="table-cell section-percentage">
-              {section.weight}%
+              {section.weight}% ({section.max_points} pts)
             </div>
             
-            <div className="table-cell"></div>
             <div className="table-cell"></div>
             <div className="table-cell"></div>
             <div className="table-cell actions">
@@ -312,7 +323,7 @@ const Configure = () => {
               </div>
               
               <div className="table-cell variable-weight">
-                {calculation.weight}%
+                -
               </div>
               
               <div className="table-cell max-points">
@@ -442,9 +453,7 @@ const FormulaEditor = ({ section, calculation, variables, onSave, onCancel }) =>
   const [formData, setFormData] = useState({
     name: calculation?.name || '',
     formula: calculation?.formula || '',
-    weight: calculation?.weight || 0,
-    max_points: calculation?.max_points || 0,
-    variables: calculation?.variables || []
+    max_points: calculation?.max_points || 0
   });
   const [dragOver, setDragOver] = useState(false);
 
@@ -546,27 +555,14 @@ const FormulaEditor = ({ section, calculation, variables, onSave, onCancel }) =>
           </div>
         </div>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>Weight (%):</label>
-            <input
-              type="number"
-              value={formData.weight}
-              onChange={(e) => setFormData(prev => ({ ...prev, weight: parseInt(e.target.value) || 0 }))}
-              min="0"
-              max="100"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Max Points:</label>
-            <input
-              type="number"
-              value={formData.max_points}
-              onChange={(e) => setFormData(prev => ({ ...prev, max_points: parseInt(e.target.value) || 0 }))}
-              min="0"
-            />
-          </div>
+        <div className="form-group">
+          <label>Max Points:</label>
+          <input
+            type="number"
+            value={formData.max_points}
+            onChange={(e) => setFormData(prev => ({ ...prev, max_points: parseInt(e.target.value) || 0 }))}
+            min="0"
+          />
         </div>
 
         <div className="modal-buttons">
@@ -583,6 +579,7 @@ const SectionEditor = ({ section, onSave, onCancel }) => {
   const [sectionData, setSectionData] = useState({
     name: section?.name || '',
     weight: section?.weight || 0,
+    max_points: section?.max_points || 0,
     calculations: section?.calculations || []
   });
 
@@ -608,13 +605,24 @@ const SectionEditor = ({ section, onSave, onCancel }) => {
           />
         </div>
 
-        <div className="form-group">
-          <label>Section Weight (%):</label>
-          <input
-            type="number"
-            value={sectionData.weight}
-            onChange={(e) => setSectionData(prev => ({ ...prev, weight: parseInt(e.target.value) }))}
-          />
+        <div className="form-row">
+          <div className="form-group">
+            <label>Section Weight (%):</label>
+            <input
+              type="number"
+              value={sectionData.weight}
+              onChange={(e) => setSectionData(prev => ({ ...prev, weight: parseInt(e.target.value) }))}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Max Points:</label>
+            <input
+              type="number"
+              value={sectionData.max_points}
+              onChange={(e) => setSectionData(prev => ({ ...prev, max_points: parseInt(e.target.value) }))}
+            />
+          </div>
         </div>
 
         <div className="modal-buttons">

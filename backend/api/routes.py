@@ -152,18 +152,6 @@ async def trigger_calculate_endpoint(calculations_json: dict, txt_file_path: str
     try:
         print("Starting LLM calculation...")
         
-        # Get the API key from environment
-        anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not anthropic_api_key:
-            print("ERROR: ANTHROPIC_API_KEY not found in environment variables")
-            raise Exception("ANTHROPIC_API_KEY not found in environment variables")
-        
-        print(f"API key found: {anthropic_api_key[:10]}...")
-        
-        # Initialize Anthropic client
-        anthropic_client = anthropic.Anthropic(api_key=anthropic_api_key)
-        print("Anthropic client initialized")
-        
         # Read the extracted tables file content
         print(f"Reading tables file: {txt_file_path}")
         
@@ -175,67 +163,44 @@ async def trigger_calculate_endpoint(calculations_json: dict, txt_file_path: str
             txt_content = f.read()
         print(f"Tables file content length: {len(txt_content)} characters")
         
-        # Prepare the prompt for Claude
-        prompt = (
-            "CRITICAL: You MUST respond with ONLY a JSON array. No text, no explanations, no notes.\n\n"
-            "Calculate these formulas using the data below:\n\n"
-            f"DATA:\n{txt_content}\n\n"
-            f"FORMULAS:\n{json.dumps(calculations_json, indent=2)}\n\n"
-            "RESPOND WITH EXACTLY THIS FORMAT AND NOTHING ELSE:\n"
-            "[{\"Simah Score\": number}, {\"Income Level\": number}, {\"Employment Stability\": number}]\n\n"
-            "DO NOT ADD ANY TEXT BEFORE OR AFTER THE JSON ARRAY."
+        # Parse the text content to extract data
+        # This is a simple approach - you might need to adjust based on your text format
+        extracted_data = {}
+        lines = txt_content.split('\n')
+        for line in lines:
+            if ':' in line:
+                key, value = line.split(':', 1)
+                key = key.strip()
+                value = value.strip()
+                # Try to convert to number if possible
+                try:
+                    if '.' in value:
+                        extracted_data[key] = float(value)
+                    else:
+                        extracted_data[key] = int(value)
+                except ValueError:
+                    extracted_data[key] = value
+        
+        print(f"Extracted data: {extracted_data}")
+        
+        # Now call the actual calculate_with_llm function directly
+        from calculations.routes import calculate_with_llm, CalculateLLMRequest
+        
+        print("Calling calculate_with_llm function directly...")
+        
+        # Create the request object
+        request = CalculateLLMRequest(
+            calculations_json=calculations_json,
+            extracted_data=extracted_data
         )
         
-        print(f"Prompt prepared, length: {len(prompt)} characters")
-        print("Calling Claude...")
-        
-        # Call Claude Sonnet 3.5
-        message = anthropic_client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=200,
-            temperature=0,
-            system="You are a JSON-only calculator. Output ONLY valid JSON arrays. Any text other than JSON will cause system failure. NO explanations, NO text, ONLY JSON.",
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        )
-        
-        print("Claude response received")
-        
-        # Extract the response
-        llm_output = message.content[0].text
-        print(f"LLM raw output: {llm_output}")
-        
-        # If the response contains explanations, extract just the JSON part
-        if llm_output.strip().startswith('[') and llm_output.strip().endswith(']'):
-            # Already clean JSON
-            clean_json = llm_output.strip()
-        else:
-            # Extract JSON array from the response
-            json_match = re.search(r'\[\s*\{.*?\}\s*\]', llm_output, re.DOTALL)
-            if json_match:
-                clean_json = json_match.group(0)
-                print(f"Extracted clean JSON: {clean_json}")
-            else:
-                clean_json = llm_output
-        
-        # Parse the LLM response to extract JSON
-        parsed_results = parse_llm_response(clean_json)
-        print(f"Parsed results: {parsed_results}")
-        
-        return {
-            "success": True,
-            "results": parsed_results,
-            "raw_llm_output": llm_output,
-            "txt_file_used": txt_file_path,
-            "message": "Calculations completed successfully using Claude Sonnet 3.5 with generated text file"
-        }
+        # Call the function directly
+        result = await calculate_with_llm(request)
+        print(f"Calculate function response: {result}")
+        return result
         
     except Exception as e:
-        print(f"Error in calculate endpoint: {e}")
+        print(f"Error in trigger_calculate_endpoint: {e}")
         import traceback
         print(f"Full traceback: {traceback.format_exc()}")
         raise

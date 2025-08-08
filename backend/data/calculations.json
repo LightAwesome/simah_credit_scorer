@@ -2,161 +2,129 @@
   "sections": [
     {
       "name": "Traditional Score",
-      "weight": 60,
+      "weight": 35,
+      "max_points": 350,
       "calculations": [
         {
-          "name": "Simah Score",
+          "name": "SIMAH Score",
           "formula": "({credit_score} / 900) * 200",
-          "variables": [
-            "credit_score"
-          ],
-          "weight": 100,
           "max_points": 200
+        },
+        {
+          "name": "Credit History",
+          "formula": "MIN((CURRENT_DATE - {first_account_date}) / 60, 1) * 50",
+          "max_points": 50
+        },
+        {
+          "name": "Payment History",
+          "formula": "IF({late_payments_12m} > 0, (1 - ({late_payments_12m} / {total_payments_12m})) * 100, 100)",
+          "max_points": 100
         }
       ]
     },
     {
       "name": "Income & Employment",
-      "weight": 40,
+      "weight": 30,
+      "max_points": 403.33,
       "calculations": [
         {
           "name": "Income Level",
           "formula": "IF({monthly_income} >= 20000, 150, IF({monthly_income} >= 15000, 120, IF({monthly_income} >= 10000, 90, IF({monthly_income} >= 7000, 60, IF({monthly_income} >= 5000, 30, 0)))))",
-          "variables": [
-            "monthly_income"
-          ],
-          "weight": 60,
           "max_points": 150
         },
         {
           "name": "Employment Stability",
           "formula": "MIN({employment_duration_months} / 24, 1) * 80",
-          "variables": [
-            "employment_duration_months"
-          ],
-          "weight": 40,
           "max_points": 80
+        },
+        {
+          "name": "Employer Type",
+          "formula": "IF({employer_classification} = 'government', 40, IF({employer_classification} = 'large_corp', 35, IF({employer_classification} = 'medium_corp', 25, IF({employer_classification} = 'small_corp', 15, IF({employer_classification} = 'self_employed', 5, 0)))))",
+          "max_points": 40
+        },
+        {
+          "name": "DTI Ratio",
+          "formula": "(1 - MIN(({total_installments} + {proposed_monthly_payment}) / {monthly_income}, 0.6)) * 133.33",
+          "max_points": 133.33
+        }
+      ]
+    },
+    {
+      "name": "Alternative Data",
+      "weight": 20,
+      "max_points": 100,
+      "calculations": [
+        {
+          "name": "Bank Account Age",
+          "formula": "IF({oldest_account_age_months} >= 36, 25, IF({oldest_account_age_months} >= 24, 20, IF({oldest_account_age_months} >= 12, 15, IF({oldest_account_age_months} >= 6, 10, 5))))",
+          "max_points": 25
+        },
+        {
+          "name": "Average Monthly Balance",
+          "formula": "IF({average_monthly_balance} >= 50000, 20, IF({average_monthly_balance} >= 20000, 15, IF({average_monthly_balance} >= 10000, 10, IF({average_monthly_balance} >= 5000, 5, 0))))",
+          "max_points": 20
+        },
+        {
+          "name": "Regular Salary Deposits",
+          "formula": "IF({regular_salary_deposits} = TRUE, 15, 5)",
+          "max_points": 15
+        },
+        {
+          "name": "Savings Ratio",
+          "formula": "IF(({average_monthly_balance} - {monthly_expenses}) / {monthly_income} > 0.2, 20, IF(({average_monthly_balance} - {monthly_expenses}) / {monthly_income} > 0.1, 15, IF(({average_monthly_balance} - {monthly_expenses}) / {monthly_income} > 0.05, 10, IF(({average_monthly_balance} - {monthly_expenses}) / {monthly_income} > 0, 5, 0))))",
+          "max_points": 20
+        },
+        {
+          "name": "Overdrafts",
+          "formula": "IF({overdrafts_12m} = 0, 20, IF({overdrafts_12m} <= 2, 15, IF({overdrafts_12m} <= 5, 10, 0)))",
+          "max_points": 20
+        }
+      ]
+    },
+    {
+      "name": "Demographics",
+      "weight": 15,
+      "max_points": 120,
+      "calculations": [
+        {
+          "name": "Age Factor",
+          "formula": "IF({age} < 21, 0, IF({age} <= 30, (({age} - 21) / 9) * 30 + 20, IF({age} <= 50, 50, IF({age} <= 65, 50 - (({age} - 50) / 15) * 20, 30))))",
+          "max_points": 50
+        },
+        {
+          "name": "Marital and Dependents",
+          "formula": "IF({marital_status} = 'married', 20, IF({marital_status} = 'single', 15, 10)) + IF({number_of_dependents} = 0, 10, IF({number_of_dependents} <= 2, 5, IF({number_of_dependents} >= 5, -5, 0)))",
+          "max_points": 30
+        },
+        {
+          "name": "Geographical Stability",
+          "formula": "IF({residence_type} = 'owned', 25, IF({residence_type} = 'family', 20, IF({residence_type} = 'long_rental', 15, IF({residence_type} = 'short_rental', 10, 5)))) + IF({city_tier} = 'tier1', 15, IF({city_tier} = 'tier2', 10, 5))",
+          "max_points": 40
+        }
+      ]
+    },
+    {
+      "name": "Vehicle Factors",
+      "weight": 10,
+      "max_points": 110,
+      "calculations": [
+        {
+          "name": "LTV Ratio",
+          "formula": "(1 - ({auto_loan_outstanding_balance} / {auto_loan_original_amount})) * 40",
+          "max_points": 40
+        },
+        {
+          "name": "Vehicle Type",
+          "formula": "IF({vehicle_category} = 'luxury', 30, IF({vehicle_category} = 'premium', 25, IF({vehicle_category} = 'mainstream', 20, IF({vehicle_category} = 'budget', 15, 5)))) + IF({vehicle_age_years} <= 1, 10, IF({vehicle_age_years} <= 3, 5, IF({vehicle_age_years} > 5, -5, 0)))",
+          "max_points": 40
+        },
+        {
+          "name": "Down Payment",
+          "formula": "MIN(({auto_loan_down_payment} / {auto_loan_original_amount}) / 0.2, 1) * 30",
+          "max_points": 30
         }
       ]
     }
   ],
-  "variables": {
-    "payment": [
-      "Active Defaulted Products",
-      "Active Guaranteed Defaulted Products",
-      "Balloon Payment",
-      "Bounced Cheques",
-      "Date Of Employment",
-      "Defaulted Products Summary",
-      "Employer",
-      "Employer Name",
-      "Employment Addresses",
-      "Employment Information",
-      "Employment Sector",
-      "Enforcement Courts Decisions",
-      "Guaranteed Defaulted Products Summary",
-      "Installment",
-      "Installment Start Date 1",
-      "Installment Start Date 2",
-      "Installment Start Date 3",
-      "Installment Start Date 4",
-      "Installment Start Date 5",
-      "Member Narratives",
-      "Number Of Defaulted Products",
-      "Outstanding",
-      "Outstanding Balance",
-      "Payment Status For Last 24 Months",
-      "Settled Defaulted Products",
-      "Settled Guaranteed Defaulted Products",
-      "Settlement Date",
-      "Total Outstanding Balances",
-      "Total Outstanding Defaulted Balances"
-    ],
-    "balance": [
-      "Amount Applied For",
-      "Cheque Amount",
-      "Claimed Amount",
-      "Postal Code",
-      "Total Guaranteed Balances",
-      "Total Guaranteed Limits",
-      "Total Limits"
-    ],
-    "account": [
-      "Account Number",
-      "Active Products Summary",
-      "Cheque Number",
-      "Cheque Status",
-      "Cloesed Product",
-      "Credit Report Summary",
-      "Credit Score",
-      "Customer Name",
-      "Enquiry Number",
-      "First Account Issue Date",
-      "Id Expiry Date",
-      "Id Number",
-      "Marital Status",
-      "Mobile Number",
-      "Number Of Active Credit Products",
-      "Number Of Applicants",
-      "Number Type",
-      "Personal Information",
-      "Personal Narratives",
-      "Phone Number",
-      "Product Details",
-      "Product Type",
-      "Resolution Number",
-      "Sabb Personal Loan",
-      "Scorecard",
-      "Status"
-    ],
-    "date": [
-      "Date Loaded",
-      "Date Of Birth",
-      "Disclaimer & Disclosure",
-      "Enquiry Date",
-      "Last Reported",
-      "Reported Bank",
-      "Reported Date",
-      "Resolution Date",
-      "Update Date"
-    ],
-    "inquiry": [
-      "Enquirier",
-      "Joint Applicant",
-      "Previous Enquiries"
-    ],
-    "score": [
-      "Score Contributing Factors"
-    ],
-    "personal": [
-      "City Name",
-      "District Name",
-      "Gender",
-      "Id Type",
-      "Nationality",
-      "Street Name"
-    ],
-    "employment": [
-      "Basic Salary",
-      "Occupation",
-      "Total Salary"
-    ],
-    "contact": [
-      "Address 1",
-      "Address 2",
-      "Address 3",
-      "Address Line 1",
-      "Address Line 2",
-      "Address Type",
-      "Addresses",
-      "Area Code",
-      "City",
-      "Contact Information",
-      "Country",
-      "Country Code",
-      "National Address",
-      "P.o.box",
-      "Percentage Allocation"
-    ]
-  }
+  "Overall Credit Score": "sum of (all the sections) * (weight of the section) / 100"
 }

@@ -341,7 +341,23 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #77ff99 transparent;
+}
+
+.calculations-table::-webkit-scrollbar {
+  width: 6px;
+}
+
+.calculations-table::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.calculations-table::-webkit-scrollbar-thumb {
+  background: #77ff99;
+  border-radius: 3px;
 }
 
 .table-header {

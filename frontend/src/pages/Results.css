@@ -320,3 +320,529 @@
     font-size: 2.5rem;
   }
 }
+
+/* Add styles for new components */
+
+.score-percentage {
+  font-size: 0.9rem;
+  color: #aaa;
+  display: block;
+}
+
+.score-breakdown {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.score-breakdown p {
+  color: #ccc;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.section-results {
+  margin-bottom: 2rem;
+}
+
+.section-calculations {
+  margin-top: 1rem;
+}
+
+.calculation-result {
+  margin-bottom: 1rem;
+}
+
+.formula-details {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  border-left: 4px solid #77ff99;
+}
+
+.formula-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.formula-name {
+  font-weight: 600;
+  color: #77ff99;
+}
+
+.formula-score {
+  font-weight: bold;
+  color: #fff;
+  background: rgba(119, 255, 153, 0.2);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.formula-info {
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.formula-info p {
+  margin: 0.3rem 0;
+}
+
+.variables-used {
+  margin-top: 0.5rem;
+}
+
+.variables-used ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0 0;
+}
+
+.variables-used li {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.2rem 0.5rem;
+  margin: 0.2rem 0;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+.missing-variables {
+  margin-top: 0.5rem;
+  color: #ff6b6b;
+  font-size: 0.8rem;
+}
+
+.data-analysis {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 2rem;
+  margin: 2rem 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.data-analysis h3 {
+  color: #77ff99;
+  margin: 0 0 1rem 0;
+}
+
+.analysis-stats p {
+  color: #ccc;
+  margin: 0.5rem 0;
+}
+
+.variables-details {
+  margin-top: 1rem;
+}
+
+.variables-details summary {
+  color: #77ff99;
+  cursor: pointer;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+  margin-bottom: 0.5rem;
+}
+
+.variables-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.variable-tag {
+  background: rgba(119, 255, 153, 0.2);
+  color: #77ff99;
+  padding: 0.3rem 0.6rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  border: 1px solid rgba(119, 255, 153, 0.3);
+}
+
+.error-section {
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 15px;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.error-section h3 {
+  color: #ff6b6b;
+  margin: 0 0 1rem 0;
+}
+
+.error-content {
+  color: #ffcccb;
+}
+
+.raw-data-section {
+  margin-top: 2rem;
+}
+
+.raw-data-section h3 {
+  color: #77ff99;
+  margin-bottom: 1rem;
+}
+
+.raw-data-content {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.raw-data-content summary {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #77ff99;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.raw-data-content pre {
+  color: #ccc;
+  padding: 1rem;
+  margin: 0;
+  overflow-x: auto;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+/* Responsive design for new components */
+@media (max-width: 768px) {
+  .formula-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .variables-list {
+    justify-content: center;
+  }
+  
+  .variable-tag {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+}
+
+/* LLM Results Section Styles */
+.llm-results-section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 2rem;
+  margin: 2rem 0;
+  border: 1px solid rgba(119, 255, 153, 0.2);
+}
+
+.llm-results-section h2 {
+  color: #77ff99;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* New sectioned layout styles */
+.llm-sections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.llm-section-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(119, 255, 153, 0.15);
+  transition: all 0.3s ease;
+}
+
+.llm-section-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(119, 255, 153, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(119, 255, 153, 0.1);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid rgba(119, 255, 153, 0.2);
+}
+
+.section-title {
+  color: #77ff99;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.section-total {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(119, 255, 153, 0.15);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(119, 255, 153, 0.3);
+}
+
+.total-label {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.total-value {
+  color: #77ff99;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.section-formulas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Legacy grid styles */
+.llm-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.llm-result-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(119, 255, 153, 0.15);
+  transition: all 0.3s ease;
+}
+
+.llm-result-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(119, 255, 153, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(119, 255, 153, 0.1);
+}
+
+.formula-result {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.formula-result:last-child {
+  border-bottom: none;
+}
+
+.formula-name {
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  flex: 1;
+  margin-right: 1rem;
+}
+
+.formula-value {
+  color: #77ff99;
+  font-weight: 700;
+  font-size: 1.2rem;
+  background: rgba(119, 255, 153, 0.1);
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid rgba(119, 255, 153, 0.2);
+}
+
+/* Responsive design for LLM results */
+@media (max-width: 768px) {
+  .llm-sections-grid,
+  .llm-results-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .section-total {
+    align-self: stretch;
+    justify-content: center;
+  }
+  
+  .formula-result {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .formula-name {
+    margin-right: 0;
+  }
+  
+  .formula-value {
+    align-self: stretch;
+    text-align: center;
+  }
+}
+
+/* Final Metrics Section Styles */
+.final-metrics-section {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.final-metrics-section h2 {
+  color: #77ff99;
+  font-size: 1.8rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.metric-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.metric-header h3 {
+  color: white;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #77ff99;
+}
+
+.metric-range {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.metric-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.metric-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s ease;
+}
+
+.simah-fill {
+  background: linear-gradient(90deg, #ff6b6b 0%, #feca57 50%, #77ff99 100%);
+}
+
+.weighted-fill {
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #77ff99 100%);
+}
+
+.interest-fill {
+  background: linear-gradient(90deg, #77ff99 0%, #feca57 50%, #ff6b6b 100%);
+}
+
+.grade-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.grade-indicator {
+  flex: 1;
+  text-align: center;
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+.grade-indicator.active {
+  background: #77ff99;
+  color: #1A1A3A;
+  transform: scale(1.1);
+}
+
+/* Risk Grade specific colors */
+.grade-A { color: #77ff99; }
+.grade-B { color: #90ee90; }
+.grade-C { color: #feca57; }
+.grade-D { color: #ff9f43; }
+.grade-E { color: #ff6b6b; }
+.grade-F { color: #e74c3c; }
+
+/* Responsive design for metrics */
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .metric-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .metric-value {
+    font-size: 1.5rem;
+  }
+  
+  .grade-scale {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .grade-indicator {
+    min-width: 40px;
+  }
+}

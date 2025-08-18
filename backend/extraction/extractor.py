@@ -1278,8 +1278,14 @@ def save_tables_to_csv(all_extracted_tables, output_dir="extracted_tables_enhanc
     """Save all successfully extracted tables to CSV files with enhanced naming"""
     import os
 
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    try:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, mode=0o777)
+    except PermissionError:
+        # Try alternative location
+        import tempfile
+        output_dir = os.path.join(tempfile.gettempdir(), "extracted_tables_enhanced")
+        os.makedirs(output_dir, exist_ok=True)
 
     saved_files = []
 
@@ -1292,9 +1298,14 @@ def save_tables_to_csv(all_extracted_tables, output_dir="extracted_tables_enhanc
 
                 filename = f"page_{page_num}_table_{table['table_num']}_b{boundary_score:.2f}_c{contrast_score:.2f}.csv"
                 filepath = os.path.join(output_dir, filename)
-                table['dataframe'].to_csv(filepath, index=False)
-                saved_files.append(filepath)
-                print(f"Saved: {filepath}")
+                try:
+                    table['dataframe'].to_csv(filepath, index=False)
+                    saved_files.append(filepath)
+                    print(f"Saved: {filepath}")
+                except PermissionError as e:
+                    print(f"Permission error saving CSV {filepath}: {e}")
+                except Exception as e:
+                    print(f"Error saving CSV {filepath}: {e}")
 
     return saved_files
 
@@ -1304,8 +1315,14 @@ def save_tables_to_text(all_extracted_tables, credit_score=None, output_file="ex
     import os
 
     output_dir = os.path.dirname(output_file)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    try:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, mode=0o777)
+    except PermissionError:
+        # Try alternative location
+        import tempfile
+        output_dir = tempfile.gettempdir()
+        output_file = os.path.join(output_dir, "all_tables.txt")
 
     lines = []
 
@@ -1339,10 +1356,27 @@ def save_tables_to_text(all_extracted_tables, credit_score=None, output_file="ex
                 lines.append("\n")
 
     # Write to text file
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines))
+    try:
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines))
+        print(f"\nSaved all tables to text file: {output_file}")
+    except PermissionError as e:
+        print(f"Permission error saving text file {output_file}: {e}")
+        # Try alternative temp location
+        import tempfile
+        temp_file = os.path.join(tempfile.gettempdir(), "all_tables.txt")
+        try:
+            with open(temp_file, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+            print(f"\nSaved all tables to temp file: {temp_file}")
+            return temp_file
+        except Exception as temp_e:
+            print(f"Error saving to temp file: {temp_e}")
+            return None
+    except Exception as e:
+        print(f"Error saving text file: {e}")
+        return None
 
-    print(f"\nSaved all tables to text file: {output_file}")
     return output_file
 
 def generate_camelot_code_from_boundaries(pdf_path, all_table_areas, table_names=None):
@@ -1481,7 +1515,9 @@ def extract(pdf_path):
 
     print("\nEnhanced detection complete! Check the debug images to see the detection process.")
     return {
-    "total_pages": len(all_table_areas),
-    "tables_found": total_detections,
-    "saved_files": saved_files,
-}
+        "total_pages": len(all_table_areas),
+        "tables_found": total_detections,
+        "saved_files": saved_files,
+        "extracted_tables_file": saved_files,  # Path to the text file with all extracted table data
+        "field_categories": fields  # Keep field names for reference only
+    }

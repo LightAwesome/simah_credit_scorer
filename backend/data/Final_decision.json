@@ -1,0 +1,5 @@
+{
+  "Simah Credit Score": "300+(Weighted Score/1020)*550",
+  "Risk Grade": "IF(Simah Credit Score>=750,\"A\",IF(Simah Credit Score>=700,\"B\",IF(Simah Credit Score>=650,\"C\",IF(Simah Credit Score>=600,\"D\",IF(Simah Credit Score>=550,\"E\",\"F\")))))",
+  "Interest Rate": "6.5+IF(Simah Credit Score>=750,1,IF(Simah Credit Score>=700,1.5,IF(Simah Credit Score>=650,2,IF(Simah Credit Score>=600,2.5,IF(Simah Credit Score>=550,3.5,5)))))"
+}

@@ -231,7 +231,8 @@ async def upload_file(file: UploadFile = File(...)):
             return JSONResponse(content={
                 "success": True,
                 "overall_score": calculation_result.get("overall_score"),
-                "sections": calculation_result.get("sections", [])
+                "sections": calculation_result.get("sections", []),
+                "final_metrics": calculation_result.get("final_metrics", {})
             })
             
         except Exception as calc_error:

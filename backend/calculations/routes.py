@@ -5,6 +5,7 @@ from .config_handler import ConfigHandler
 import anthropic
 import json
 import os
+import re
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -89,8 +90,8 @@ def _structure_parsed_results(parsed_results: List[Dict[str, Any]]) -> Dict[str,
     
     for result in parsed_results:
         # Check if this is the overall score entry
-        if "Overall Credit Score" in result:
-            overall_score = result["Overall Credit Score"]
+        if "Weighted Score" in result:
+            overall_score = result["Weighted Score"]
         else:
             # This is a section
             for section_name, section_data in result.items():
@@ -261,7 +262,7 @@ async def calculate_with_llm(request: CalculateLLMRequest):
                 ...},
             ...
             },
-            {'Overall Credit Score': 'sum of (all the sections) * (weight of the section) / 100'}
+            {'Weighted Score': 'sum of (all the sections) * (weight of the section) / 100'}
 ]
             
             ```
@@ -288,10 +289,22 @@ async def calculate_with_llm(request: CalculateLLMRequest):
         # Parse the LLM response to extract JSON
         parsed_results = parse_llm_response(llm_output)
         
+        # Get the weighted score for final calculations
+        weighted_score = parsed_results.get("overall_score", 0)
+        
+        # Calculate final metrics (Simah Credit Score, Risk Grade, Interest Rate)
+        final_metrics = calculate_final_metrics(weighted_score) if weighted_score else {
+            "simah_credit_score": 0,
+            "risk_grade": "F", 
+            "interest_rate": 10.0,
+            "weighted_score": 0
+        }
+        
         return {
             "success": True,
-            "overall_score": parsed_results.get("overall_score"),
+            "overall_score": weighted_score,
             "sections": parsed_results.get("sections", []),
+            "final_metrics": final_metrics,
             "raw_llm_output": llm_output,
             "message": "Calculations completed successfully using Claude Sonnet 3.5"
         }
@@ -362,3 +375,187 @@ async def update_variables(variables: Dict[str, list]):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.get("/final-decision")
+async def get_final_decision_configuration():
+    """
+    Retrieve the current final decision configuration.
+    Returns the formulas for Simah Credit Score, Risk Grade, and Interest Rate.
+    """
+    try:
+        config = config_handler.load_final_decision_config()
+        
+        return {
+            "success": True,
+            "config": config
+        }
+        
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Final decision configuration file not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.put("/final-decision")
+async def update_final_decision_configuration(config: Dict[str, str]):
+    """
+    Update the final decision configuration.
+    Accepts formulas for Simah Credit Score, Risk Grade, and Interest Rate.
+    """
+    try:
+        # Validate required fields
+        required_fields = ["Simah Credit Score", "Risk Grade", "Interest Rate"]
+        for field in required_fields:
+            if field not in config:
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
+        success = config_handler.save_final_decision_config(config)
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to save final decision configuration")
+        
+        return {
+            "success": True,
+            "message": "Final decision configuration updated successfully",
+            "formulas_count": len(config)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+def calculate_final_metrics(weighted_score: float) -> Dict[str, Any]:
+    """
+    Calculate Simah Credit Score, Risk Grade, and Interest Rate from the Weighted Score
+    using the formulas from Final_decision.json.
+    """
+    try:
+        # Load the final decision configuration
+        final_config = config_handler.load_final_decision_config()
+        
+        # Calculate Simah Credit Score
+        simah_formula = final_config.get("Simah Credit Score", "300+(Weighted Score/1020)*550")
+        simah_score = _evaluate_formula(simah_formula, {"Weighted Score": weighted_score})
+        
+        # Calculate Risk Grade using nested IF statements
+        risk_formula = final_config.get("Risk Grade", 
+            "IF(Simah Credit Score>=750,\"A\",IF(Simah Credit Score>=700,\"B\",IF(Simah Credit Score>=650,\"C\",IF(Simah Credit Score>=600,\"D\",IF(Simah Credit Score>=550,\"E\",\"F\")))))")
+        risk_grade = _evaluate_formula(risk_formula, {"Simah Credit Score": simah_score})
+        
+        # Calculate Interest Rate
+        interest_formula = final_config.get("Interest Rate",
+            "6.5+IF(Simah Credit Score>=750,1,IF(Simah Credit Score>=700,1.5,IF(Simah Credit Score>=650,2,IF(Simah Credit Score>=600,2.5,IF(Simah Credit Score>=550,3.5,5)))))")
+        interest_rate = _evaluate_formula(interest_formula, {"Simah Credit Score": simah_score})
+        
+        return {
+            "simah_credit_score": round(simah_score, 2) if isinstance(simah_score, (int, float)) else simah_score,
+            "risk_grade": risk_grade,
+            "interest_rate": round(interest_rate, 2) if isinstance(interest_rate, (int, float)) else interest_rate,
+            "weighted_score": weighted_score
+        }
+        
+    except Exception as e:
+        print(f"Error calculating final metrics: {e}")
+        return {
+            "simah_credit_score": 0,
+            "risk_grade": "F",
+            "interest_rate": 10.0,
+            "weighted_score": weighted_score,
+            "error": str(e)
+        }
+
+def _evaluate_formula(formula: str, variables: Dict[str, Any]) -> Any:
+    """
+    Evaluate a formula string with given variables using Claude Sonnet.
+    Supports complex arithmetic, IF statements, and logical operations.
+    """
+    try:
+        # Get the API key from environment
+        anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not anthropic_api_key:
+            print("ERROR: ANTHROPIC_API_KEY not found for formula evaluation")
+            return 0
+        
+        # Create Anthropic client
+        anthropic_client = anthropic.Anthropic(api_key=anthropic_api_key)
+        
+        # Prepare the prompt for Claude
+        prompt = f"""
+You are a mathematical calculator. Evaluate the given formula with the provided variable values.
+
+Formula: {formula}
+Variables: {json.dumps(variables, indent=2)}
+
+Instructions:
+1. Replace the variable names in the formula with their actual values
+2. Evaluate the mathematical expression step by step
+3. Handle IF statements in Excel format: IF(condition, true_value, false_value)
+4. For nested IF statements, evaluate from innermost to outermost
+5. Return ONLY the final result - nothing else
+6. If the result is a string (like grade letters), return it without quotes
+7. If the result is a number, return it as a decimal number
+
+Examples:
+- IF(750>=750,"A","B") → A
+- 6.5+IF(651>=750,1,2) → 8.5
+- 300+(650/1020)*550 → 651.76
+
+Formula to evaluate: {formula}
+Variables: {variables}
+
+Final result:"""
+
+        # Call Claude
+        message = anthropic_client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=100,
+            temperature=0,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+        
+        # Extract and clean the response
+        result_text = message.content[0].text.strip()
+        
+        # Try to convert to number if possible
+        try:
+            # Check if it's a float
+            if '.' in result_text:
+                return float(result_text)
+            else:
+                # Try integer first
+                try:
+                    return int(result_text)
+                except ValueError:
+                    # If not a number, return as string
+                    return result_text
+        except ValueError:
+            # Return as string if not a number
+            return result_text
+        
+    except Exception as e:
+        print(f"Error evaluating formula '{formula}' with Claude: {e}")
+        # Fallback to simple evaluation for basic cases
+        try:
+            # Simple variable substitution as fallback
+            processed_formula = formula
+            for var_name, var_value in variables.items():
+                processed_formula = processed_formula.replace(var_name, str(var_value))
+            
+            # If it's a simple mathematical expression without IF statements
+            if "IF(" not in processed_formula and re.match(r'^[0-9+\-*/().,\s]+$', processed_formula):
+                return eval(processed_formula)
+            else:
+                # Return default values based on what the formula is calculating
+                if "Risk Grade" in formula or "\"A\"" in formula:
+                    return "F"  # Default grade
+                else:
+                    return 0  # Default number
+        except:
+            return 0
+
+

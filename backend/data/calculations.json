@@ -126,5 +126,5 @@
       ]
     }
   ],
-  "Overall Credit Score": "sum of (all the sections) * (weight of the section) / 100"
+  "Weighted Score": "sum of (all the sections) * (weight of the section) / 100"
 }

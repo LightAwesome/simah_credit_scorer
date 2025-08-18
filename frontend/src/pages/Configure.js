@@ -4,14 +4,14 @@ import './Configure.css';
 
 const Configure = () => {
   const [calculations, setCalculations] = useState({ sections: [], variables: {} });
+  const [finalDecision, setFinalDecision] = useState({});
   const [loading, setLoading] = useState(true);
   const [editingFormula, setEditingFormula] = useState(null);
   const [editingSection, setEditingSection] = useState(null);
   const [showAddSection, setShowAddSection] = useState(false);
   const [showAddFormula, setShowAddFormula] = useState(null);
   const [selectedVariables, setSelectedVariables] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  // search/category removed — variables shown as provided by backend
   const navigate = useNavigate();
 
   const handleBackToUpload = () => {
@@ -24,29 +24,33 @@ const Configure = () => {
       try {
         setLoading(true);
         
-        // Fetch both calculations and variables
-        const [calculationsResponse, variablesResponse] = await Promise.all([
+        // Fetch calculations, variables, and final decision configuration
+        const [calculationsResponse, variablesResponse, finalDecisionResponse] = await Promise.all([
           fetch('/api/calculations/formula'),
-          fetch('/api/calculations/variables')
+          fetch('/api/calculations/variables'),
+          fetch('/api/calculations/final-decision')
         ]);
         
-        if (calculationsResponse.ok && variablesResponse.ok) {
+        if (calculationsResponse.ok && variablesResponse.ok && finalDecisionResponse.ok) {
           const calculationsResult = await calculationsResponse.json();
           const variablesResult = await variablesResponse.json();
+          const finalDecisionResult = await finalDecisionResponse.json();
           
-          if (calculationsResult.success && variablesResult.success) {
+          if (calculationsResult.success && variablesResult.success && finalDecisionResult.success) {
             setCalculations({
               ...calculationsResult.config,
               variables: variablesResult.variables
             });
+            setFinalDecision(finalDecisionResult.config);
           } else {
-            console.error('Invalid response format:', { calculationsResult, variablesResult });
+            console.error('Invalid response format:', { calculationsResult, variablesResult, finalDecisionResult });
             alert('Invalid response format from server');
           }
         } else {
           console.error('Failed to fetch data:', { 
             calculationsStatus: calculationsResponse.statusText,
-            variablesStatus: variablesResponse.statusText 
+            variablesStatus: variablesResponse.statusText,
+            finalDecisionStatus: finalDecisionResponse.statusText 
           });
           alert('Failed to load data from server');
         }
@@ -146,6 +150,29 @@ const Configure = () => {
     }
   };
 
+  const saveFinalDecision = async () => {
+    try {
+      const response = await fetch('/api/calculations/final-decision', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(finalDecision),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Final decision formulas saved successfully! Updated ${result.formulas_count} formulas.`);
+      } else {
+        const error = await response.json();
+        alert(`Error saving final decision: ${error.detail || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error saving final decision:', error);
+      alert('Error saving final decision. Please check your connection.');
+    }
+  };
+
   // Variable manipulation functions
   const toggleVariableSelection = (variableName) => {
     setSelectedVariables(prev => 
@@ -159,22 +186,46 @@ const Configure = () => {
     setSelectedVariables([]);
   };
 
-  // Filter variables based on search and category
-  const getFilteredVariables = () => {
-    let filteredVars = {};
-    
-    Object.entries(calculations.variables).forEach(([category, variables]) => {
-      if (selectedCategory === 'all' || selectedCategory === category) {
-        const filtered = variables.filter(variable =>
-          variable.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        if (filtered.length > 0) {
-          filteredVars[category] = filtered;
-        }
-      }
-    });
-    
-    return filteredVars;
+  // No search/category filtering — return variables as received from backend
+  const getFilteredVariables = () => calculations.variables || {};
+
+  // Final Decision Component
+  const FinalDecisionSection = () => {
+    const handleFormulaChange = (key, value) => {
+      setFinalDecision(prev => ({
+        ...prev,
+        [key]: value
+      }));
+    };
+
+    return (
+      <div className="final-decision-section">
+        <div className="section-header">
+          <h3>⚖️ Final Decision Formulas</h3>
+          <button 
+            className="save-final-decision-btn"
+            onClick={saveFinalDecision}
+          >
+            Save Final Decision
+          </button>
+        </div>
+        <div className="formulas-container">
+          {Object.entries(finalDecision).map(([key, formula]) => (
+            <div key={key} className="formula-row">
+              <label className="formula-label">{key}:</label>
+              <textarea
+                className="formula-input-text"
+                value={formula}
+                onChange={(e) => handleFormulaChange(key, e.target.value)}
+                placeholder={`Enter formula for ${key}`}
+                rows="2"
+              />
+            </div>
+          ))}
+        </div>
+
+      </div>
+    );
   };
 
   // Variable Selector Component
@@ -196,27 +247,7 @@ const Configure = () => {
       <div className="variable-selector">
         <div className="selector-header">
           <h3>📚 Variables Library</h3>
-          <div className="search-controls">
-            <input
-              type="text"
-              placeholder="🔍 Search variables..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="variable-search"
-            />
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="category-filter"
-            >
-              <option value="all">All Categories</option>
-              {Object.keys(calculations.variables).map(category => (
-                <option key={category} value={category}>
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Search and category filters removed */}
         </div>
 
         <div className="variables-container">
@@ -403,6 +434,7 @@ const Configure = () => {
           <div className="main-layout">
             {/* Variables Library - Left Side */}
             <div className="variables-sidebar">
+              <FinalDecisionSection />
               <VariableSelector />
             </div>
 

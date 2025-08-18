@@ -11,6 +11,7 @@ class ConfigHandler:
     def __init__(self):
         self.calculations_path = Path(__file__).parent.parent / "data" / "calculations.json"
         self.variables_path = Path(__file__).parent.parent / "data" / "variables.json"
+        self.final_decision_path = Path(__file__).parent.parent / "data" / "Final_decision.json"
     
     def load_calculations_config(self) -> Dict[str, Any]:
         """Load the calculations configuration from JSON file."""
@@ -67,4 +68,24 @@ class ConfigHandler:
             return True
         except Exception as e:
             print(f"Error saving variables config: {e}")
+            return False
+    
+    def load_final_decision_config(self) -> Dict[str, str]:
+        """Load the final decision configuration from JSON file."""
+        try:
+            with open(self.final_decision_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Final decision config not found at {self.final_decision_path}")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON in final decision config: {e}")
+    
+    def save_final_decision_config(self, config: Dict[str, str]) -> bool:
+        """Save the final decision configuration to JSON file."""
+        try:
+            with open(self.final_decision_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+            return True
+        except Exception as e:
+            print(f"Error saving final decision config: {e}")
             return False

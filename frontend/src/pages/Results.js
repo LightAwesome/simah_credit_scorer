@@ -9,8 +9,18 @@ const Results = () => {
 
   // Add debugging
   console.log('Analysis Result:', analysisResult);
+  console.log('Location state:', location.state);
 
   if (!analysisResult) {
+    console.log('No analysis result found, redirecting to home');
+    navigate('/');
+    return null;
+  }
+
+  // Additional validation
+  if (!analysisResult.success) {
+    console.log('Analysis result indicates failure:', analysisResult);
+    alert(`Analysis failed: ${analysisResult.error || analysisResult.calculation_error || 'Unknown error'}`);
     navigate('/');
     return null;
   }
@@ -95,7 +105,6 @@ const Results = () => {
   const calculationData = getCalculationData();
   const llmResults = parseLLMResults(calculationData);
   const finalResult = calculationData.final_result || {};
-  const sections = calculationData.sections || [];
 
   // Add debugging for calculation data
   console.log('Calculation Data:', calculationData);
@@ -103,10 +112,23 @@ const Results = () => {
 
   // Get overall score from new structure or legacy
   const getOverallScore = () => {
+    if (analysisResult.overall_score !== undefined) {
+      return analysisResult.overall_score;
+    }
     if (llmResults && llmResults.overall_score !== undefined) {
       return llmResults.overall_score;
     }
     return finalResult.final_credit_score || 0;
+  };
+
+  // Safe access to final metrics
+  const getFinalMetrics = () => {
+    return analysisResult.final_metrics || {};
+  };
+
+  const getSimahScore = () => {
+    const metrics = getFinalMetrics();
+    return metrics.simah_credit_score || 0;
   };
 
   const renderLLMResults = () => {
@@ -164,57 +186,7 @@ const Results = () => {
     return null;
   };
 
-  const renderScoreCard = (title, score, maxScore, description, details = null) => (
-    <div className="score-card">
-      <div className="score-header">
-        <h3>{title}</h3>
-        <div className="score-display">
-          <span className="score-value">{Math.round(score)}</span>
-          <span className="score-max">/{maxScore}</span>
-        </div>
-      </div>
-      <div className="score-bar">
-        <div 
-          className="score-fill" 
-          style={{ width: `${(score / maxScore) * 100}%` }}
-        ></div>
-      </div>
-      <p className="score-description">{description}</p>
-      {details && (
-        <div className="score-details">
-          {details}
-        </div>
-      )}
-    </div>
-  );
 
-  const renderFormulaDetails = (calculation) => (
-    <div className="formula-details">
-      <div className="formula-header">
-        <span className="formula-name">{calculation.name}</span>
-        <span className="formula-score">{Math.round(calculation.score)}/{calculation.max_points}</span>
-      </div>
-      <div className="formula-info">
-        <p><strong>Formula:</strong> {calculation.formula}</p>
-        <p><strong>Weight:</strong> {calculation.weight}%</p>
-        {calculation.variables_used && Object.keys(calculation.variables_used).length > 0 && (
-          <div className="variables-used">
-            <strong>Variables:</strong>
-            <ul>
-              {Object.entries(calculation.variables_used).map(([key, value]) => (
-                <li key={key}>{key}: {value}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {calculation.missing_variables && calculation.missing_variables.length > 0 && (
-          <div className="missing-variables">
-            <strong>Missing Variables:</strong> {calculation.missing_variables.join(', ')}
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
   const getScoreColor = (score, maxScore) => {
     const percentage = (score / maxScore) * 100;
@@ -236,18 +208,18 @@ const Results = () => {
 
       <div className="results-content">
         <div className="overall-score">
-          <h2>Overall Credit Score</h2>
+          <h2>Simah Credit Score</h2>
           <div className="main-score">
             <div 
               className="score-circle"
               style={{ 
-                background: `conic-gradient(${getScoreColor(getOverallScore(), 900)} ${(getOverallScore() / 900) * 360}deg, rgba(255,255,255,0.1) 0deg)`
+                background: `conic-gradient(${getScoreColor(getSimahScore(), 850)} ${(getSimahScore() - 300) / 550 * 360}deg, rgba(255,255,255,0.1) 0deg)`
               }}
             >
               <div className="score-inner">
-                <span className="main-score-value">{Math.round(getOverallScore())}</span>
-                <span className="main-score-label">Credit Score</span>
-                <span className="score-percentage">{Math.round((getOverallScore() / 900) * 100)}%</span>
+                <span className="main-score-value">{Math.round(getSimahScore())}</span>
+                <span className="main-score-label">Simah Credit Score</span>
+                <span className="score-percentage">{Math.round((getSimahScore() - 300) / 550 * 100)}%</span>
               </div>
             </div>
           </div>
@@ -258,6 +230,70 @@ const Results = () => {
             </div>
           )}
         </div>
+
+        {/* Final Metrics Section */}
+        {Object.keys(getFinalMetrics()).length > 0 && (
+          <div className="final-metrics-section">
+            <h2>Final Credit Assessment</h2>
+            <div className="metrics-grid">
+              <div className="metric-card weighted-score">
+                <div className="metric-header">
+                  <h3>Weighted Score</h3>
+                  <div className="metric-value">
+                    {Math.round(getOverallScore())}
+                  </div>
+                </div>
+                <div className="metric-range">Range: 0-1020</div>
+                <div className="metric-bar">
+                  <div 
+                    className="metric-fill weighted-fill" 
+                    style={{ 
+                      width: `${(getOverallScore() / 1020) * 100}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="metric-card risk-grade">
+                <div className="metric-header">
+                  <h3>Risk Grade</h3>
+                  <div className={`metric-value grade-${getFinalMetrics().risk_grade || 'F'}`}>
+                    {getFinalMetrics().risk_grade || 'F'}
+                  </div>
+                </div>
+                <div className="metric-range">Grades: A (Best) - F (Highest Risk)</div>
+                <div className="grade-scale">
+                  {['A', 'B', 'C', 'D', 'E', 'F'].map(grade => (
+                    <span 
+                      key={grade} 
+                      className={`grade-indicator ${grade === getFinalMetrics().risk_grade ? 'active' : ''}`}
+                    >
+                      {grade}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="metric-card interest-rate">
+                <div className="metric-header">
+                  <h3>Interest Rate</h3>
+                  <div className="metric-value">
+                    {(getFinalMetrics().interest_rate || 0).toFixed(1)}%
+                  </div>
+                </div>
+                <div className="metric-range">Typical Range: 6.5% - 11.5%</div>
+                <div className="metric-bar">
+                  <div 
+                    className="metric-fill interest-fill" 
+                    style={{ 
+                      width: `${Math.min(((getFinalMetrics().interest_rate || 0) - 6.5) / 5 * 100, 100)}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* LLM Calculation Results */}
         {llmResults && renderLLMResults()}

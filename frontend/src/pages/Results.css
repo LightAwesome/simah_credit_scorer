@@ -697,3 +697,152 @@
     text-align: center;
   }
 }
+
+/* Final Metrics Section Styles */
+.final-metrics-section {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.final-metrics-section h2 {
+  color: #77ff99;
+  font-size: 1.8rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.metric-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.metric-header h3 {
+  color: white;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #77ff99;
+}
+
+.metric-range {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.metric-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.metric-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s ease;
+}
+
+.simah-fill {
+  background: linear-gradient(90deg, #ff6b6b 0%, #feca57 50%, #77ff99 100%);
+}
+
+.weighted-fill {
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #77ff99 100%);
+}
+
+.interest-fill {
+  background: linear-gradient(90deg, #77ff99 0%, #feca57 50%, #ff6b6b 100%);
+}
+
+.grade-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.grade-indicator {
+  flex: 1;
+  text-align: center;
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+.grade-indicator.active {
+  background: #77ff99;
+  color: #1A1A3A;
+  transform: scale(1.1);
+}
+
+/* Risk Grade specific colors */
+.grade-A { color: #77ff99; }
+.grade-B { color: #90ee90; }
+.grade-C { color: #feca57; }
+.grade-D { color: #ff9f43; }
+.grade-E { color: #ff6b6b; }
+.grade-F { color: #e74c3c; }
+
+/* Responsive design for metrics */
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .metric-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .metric-value {
+    font-size: 1.5rem;
+  }
+  
+  .grade-scale {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .grade-indicator {
+    min-width: 40px;
+  }
+}

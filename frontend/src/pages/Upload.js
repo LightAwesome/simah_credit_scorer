@@ -58,18 +58,30 @@ const Upload = () => {
         body: formData,
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
       if (response.ok) {
         const result = await response.json();
         console.log('Upload result:', result); // For debugging
         
-        // Navigate to results page with the new data format
-        navigate('/results', { 
-          state: { 
-            analysisResult: result 
-          } 
-        });
+        // Check if we have valid results
+        if (result.success) {
+          console.log('Navigating to results page...');
+          // Navigate to results page with the new data format
+          navigate('/results', { 
+            state: { 
+              analysisResult: result 
+            } 
+          });
+        } else {
+          console.error('API returned success=false:', result);
+          alert(`Analysis failed: ${result.error || result.calculation_error || 'Unknown error'}`);
+        }
       } else {
-        alert('Error analyzing file. Please try again.');
+        const errorData = await response.text();
+        console.error('Response not ok:', response.status, errorData);
+        alert(`Error analyzing file (${response.status}). Please try again.`);
       }
     } catch (error) {
       console.error('Error uploading file:', error);
